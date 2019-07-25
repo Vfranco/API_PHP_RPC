@@ -1,0 +1,26 @@
+{
+  "name": "vector",
+  "version": "1.0.0",
+  "description": "Framework Vector",
+  "main": "index.php",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://vfrancov@bitbucket.org/vfrancov/vectoreasy.git"
+  },
+  "keywords": [
+    "Vector",
+    "Easy",
+    "FrameWork"
+  ],
+  "author": "Ing. VfrancoV",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/vfrancov/vectoreasy#readme",
+  "devDependencies": {
+    "gulp": "^4.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-uglify": "^3.0.1"
+  }
+}

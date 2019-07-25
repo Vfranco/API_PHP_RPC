@@ -1,0 +1,9 @@
+web.config
+node_modules
+vendor
+.config
+.vscode
+Scripts
+Layouts
+Content
+.zip
