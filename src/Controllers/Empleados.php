@@ -42,6 +42,13 @@ class Empleados
         Response::status(200)->json($obj->ReadByCedula());
     }
 
+    static function ReadByName()
+    {
+        ActionFilters::Get();
+        $obj = new ModelEmpleados(Request::phpInput());
+        Response::status(200)->json($obj->ReadByName());
+    }
+
     static function Update()
     {
         ActionFilters::Get();

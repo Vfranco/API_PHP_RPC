@@ -15,4 +15,12 @@ class Usuarios
         $obj = new ModelUsuarios(Request::phpInput());
         Response::status(200)->json($obj->Create());
     }
+
+    static function CheckEmail()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelUsuarios(Request::phpInput());
+        Response::status(200)->json($obj->CheckEmail());
+    }
 }

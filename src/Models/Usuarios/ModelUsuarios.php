@@ -93,6 +93,25 @@ class ModelUsuarios
         }
     }
 
+    public function CheckEmail()
+    {
+        if(Validate::notEmptyFields($this->formData))
+            return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
+        else
+        {
+            $emailExist = ModelGeneral::recordExist([
+                'fields'     => "*",
+                'table'      => "cms_acl_user",
+                'arguments'  => "email_acl_user = '". $this->formData['correo'] ."'"
+            ]);
+
+            if($emailExist)
+                return ['status' => true, 'message' => 'Ya existe una cuenta, con este correo'];
+            else
+                return ['status' => false, 'message' => 'Bien!, hemos validado tu correo'];
+        }
+    }
+
     public static function Read()
     {
         $resultSet = Database::query([

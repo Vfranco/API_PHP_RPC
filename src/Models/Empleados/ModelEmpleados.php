@@ -49,8 +49,14 @@ class ModelEmpleados
                     'autoinc'   => true                    
                 ])->affectedRow();
 
+                $lastId = Database::query([
+                    'fields'    => "id_registro_personal as id, CONCAT(nombres_registro, ' ', apellidos_registros) as prop",
+                    'table'     => "cms_registro_personal",
+                    'arguments' => "cedula_registro = '". $this->formData['cedula'] ."'"
+                ])->records()->resultToArray();
+
                 if($saveEmpleado)
-                    return ['status' => true, 'message' => 'Empleado Registrado'];
+                    return ['status' => true, 'message' => 'Empleado Registrado', 'append' => ['id' => $lastId[0]['id'], 'prop' => $lastId[0]['prop']]];
                 else
                     return ['status' => false, 'message' => 'Ha ocurrido un error al crear el Empleado'];
             }
@@ -96,9 +102,26 @@ class ModelEmpleados
     public function ReadByEmpresa()
     {
         $resultSet = Database::query([
-            'fields'    => "ce.id_cms_empleado, ce.nombres_empleado, ce.apellidos_empleado, ce.direccion_empleado, ce.telefono_empleado, ce.email_empleado, cs.nombre_sede, ce.cms_estados_id_cms_estado, ce.cedula_empleado",
+            'fields'    => "ce.id_cms_empleado, ce.nombres_empleado, ce.apellidos_empleado, ce.direccion_empleado, ce.telefono_empleado, ce.email_empleado, cs.nombre_sede, ce.cms_estados_id_cms_estado, ce.cedula_empleado, CONCAT(ce.nombres_empleado, ' ', ce.apellidos_empleado) as empleado",
             'table'     => "cms_empleados ce JOIN cms_sedes cs ON ce.cms_sede_id_cms_sede = cs.id_cms_sede",
-            'arguments' => "ce.cms_empresas_id_cms_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['uid']) ."' ORDER BY ce.id_cms_empleado DESC LIMIT 7"
+            'arguments' => "ce.cms_empresas_id_cms_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['uid']) ."' ORDER BY ce.id_cms_empleado DESC"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron registros'];
+        
+        return [
+            'status'    => true,
+            'rows'      => $resultSet
+        ];
+    }
+
+    public function ReadByName()
+    {
+        $resultSet = Database::query([
+            'fields'    => "ce.id_cms_empleado, CONCAT(ce.nombres_empleado, ' ', ce.apellidos_empleado) as empleado, ce.direccion_empleado, ce.telefono_empleado, ce.email_empleado, cs.nombre_sede, ce.cms_estados_id_cms_estado, ce.cedula_empleado",
+            'table'     => "cms_empleados ce JOIN cms_sedes cs ON ce.cms_sede_id_cms_sede = cs.id_cms_sede",
+            'arguments' => "ce.nombres_empleado LIKE '". $this->formData['empleado'] ."%' ORDER BY ce.id_cms_empleado DESC"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)

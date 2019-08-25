@@ -186,7 +186,7 @@ class Database extends Statement
      */
     public static function affectedRow()
     {
-        return self::$insertSentence;        
+        return self::$insertSentence;
     }
 
     /**

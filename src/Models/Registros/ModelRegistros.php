@@ -127,18 +127,119 @@ class ModelRegistros extends ModelGeneral
 
             $visitas = Database::query([
                 'fields'    => "*",
-                'table'     => "cms_registro_actividad ca JOIN cms_registro_personal cr ON ca.cms_registros_id_registro = cr.id_registro_personal",
-                'arguments' => "cms_empresa_id_empresa = '". $id_cms_empresa ."'"
+                'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
+                'arguments' => "cra.cms_empresa_id_empresa = '". $id_cms_empresa ."' ORDER BY cra.id_cms_registro_actividad DESC"
             ])->records()->resultToArray();
         }
         else 
         {
-            $cedula_empleado = $this->getCedulaByIdEmpleado($this->formData['id_cms_empleado']);            
+            $cedula_empleado = $this->getCedulaByIdEmpleado($this->formData['id_cms_empleado']);
 
             $visitas = Database::query([
                 'fields'    => "*",
-                'table'     => "cms_registro_actividad ca JOIN cms_registro_personal cr ON ca.cms_registros_id_registro = cr.id_registro_personal",
-                'arguments' => "id_registro_personal = '". $this->getPersonalById($cedula_empleado) ."'"                
+                'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
+                'arguments' => "cp.id_registro_personal = '". $this->getPersonalById($cedula_empleado) ."' ORDER BY cra.id_cms_registro_actividad DESC"
+            ])->records()->resultToArray();
+        }        
+
+        if(isset($visitas[0]['empty']) && $visitas[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron datos'];
+
+        return [
+            'status'    => true,
+            'rows'      => $visitas
+        ];
+    }
+
+    public function ObtenerReporteActividades()
+    {
+        $arguments = "";
+        $isDiferentField = false;
+        
+        foreach($this->formData as $field => $value)
+        {
+            if($field == 'empleado')
+            {
+                if($value == '*')                
+                    $arguments .= "";                
+                else 
+                {
+                    if($isDiferentField)
+                        $arguments .= " AND";
+
+                    $arguments .= " cra.cms_registros_id_registro = '". $value ."'";
+                    $isDiferentField = true;
+                }
+            }
+
+            if($field == 'sede')
+            {
+                if($value == '*')
+                    $arguments .= "";
+                else
+                {
+                    if($isDiferentField)
+                        $arguments .= " AND";
+
+                    $arguments .= " cp.cms_sedes_id_cms_sede = '". $value ."'";
+                    $isDiferentField = true;
+                }                
+            }
+
+            if($field == 'entradaSalida')
+            {
+                if($value == '*')
+                    $arguments .= " AND fecha_ingreso BETWEEN '". $this->formData['desde'] ."' AND '". $this->formData['hasta'] ."' AND fecha_salida BETWEEN '". $this->formData['desde'] ."' AND '". $this->formData['hasta'] ."'";
+                else
+                {
+                    if($isDiferentField)
+                        $arguments .= " AND";
+
+                    $arguments .= " $value BETWEEN '". $this->formData['desde'] ."' AND '". $this->formData['hasta'] ."'";
+                    $isDiferentField = true;
+                }
+            }
+
+            if($field == 'id_cms_empresa')
+            {
+                if($value == '*')
+                    $arguments .= "";
+                else
+                {
+                    if($isDiferentField)
+                        $arguments .= " AND";
+
+                    $arguments .= " cra.cms_empresa_id_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."'";
+                    $isDiferentField = true;
+                }
+            }            
+        }
+
+        $visitas = Database::query([
+            'fields'    => $this->formData['fields'],
+            'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
+            'arguments' => $arguments            
+        ])->records()->resultToArray();
+
+        if(isset($visitas[0]['empty']) && $visitas[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron datos'];
+
+        return [
+            'status'    => true,
+            'rows'      => $visitas
+        ];
+    }
+
+    public function ExportExcel()
+    {
+        if(isset($this->formData['id_cms_empresa']))
+        {
+            $id_cms_empresa = ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']);            
+
+            $visitas = Database::query([
+                'fields'    => "cp.cedula_registro as Cedula, cp.nombres_registro as Nombres, cp.apellidos_registros as Apellidos, cs.nombre_sede as Sede, cra.fecha_ingreso as Entrada, cra.fecha_salida as Salida",
+                'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
+                'arguments' => "cra.cms_empresa_id_empresa = '". $id_cms_empresa ."' ORDER BY cra.id_cms_registro_actividad DESC"
             ])->records()->resultToArray();
         }        
 

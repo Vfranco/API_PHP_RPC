@@ -5,6 +5,7 @@ namespace Models\Sedes;
 use Database\Database;
 use Core\{Validate};
 use Models\General\ModelGeneral;
+use Database\Connect;
 
 class ModelSedes
 {
