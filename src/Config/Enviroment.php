@@ -26,7 +26,7 @@ define('PATH_ROOT', '/');
 define('SERVER', 'localhost');
 define('USER', 'root');
 define('PSWD', 'admin');
-define('DATABASE', 'sigga_bd');
+define('DATABASE', 'sigga_bd_new');
 
 /**
  * FTP user : sigga - pass : d*cXjkC+5vm$

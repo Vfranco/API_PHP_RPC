@@ -51,16 +51,16 @@ define('MENU_DEFAULT', [
         'color'     => 'primary',
         'estado'    => 1
     ],
+    'Mis Visitantes'    => [
+        'href'      => '#!/visitantes',
+        'icon'      => 'circle-08',
+        'color'     => 'misvisitantes',
+        'estado'    => 1
+    ],
     'Mis Proveedores'   => [
         'href'      => '#!/proveedores',
         'icon'      => 'building',
         'color'     => 'yellow',
-        'estado'    => 2
-    ],
-    'Mis Visitantes'    => [
-        'href'      => '#!/visitantes',
-        'icon'      => 'circle-08',
-        'color'     => 'red',
         'estado'    => 2
     ]]
 );

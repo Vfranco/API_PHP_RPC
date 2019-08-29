@@ -12,15 +12,15 @@ class ModelGeneral
         $getIdUser = self::getIdUserByDecode($user);
 
         $getId = Database::query([
-            'fields'    => "id_cms_empresas",
-            'table'     => "cms_empresas",
-            'arguments' => "id_acl_user_empresa_fk = '". $getIdUser ."'"
+            'fields'    => "id_sg_empresa",
+            'table'     => "sg_empresas",
+            'arguments' => "id_sg_usuario = '". $getIdUser ."'"
         ])->records()->resultToArray();
 
         if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
             return [];
 
-        return $getId[0]['id_cms_empresas'];
+        return $getId[0]['id_sg_empresa'];
 
     }
 
@@ -29,29 +29,35 @@ class ModelGeneral
         $decodeUser = base64_decode($user);
 
         $getId = Database::query([
-            'fields'    => "id_acl_user",
-            'table'     => "cms_acl_user",
-            'arguments' => "email_acl_user = '". Database::escapeSql($decodeUser) ."'"
+            'fields'    => "id_sg_usuario",
+            'table'     => "sg_usuarios",
+            'arguments' => "correo = '". Database::escapeSql($decodeUser) ."'"
         ])->records()->resultToArray();
 
         if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
             return [];
 
-        return $getId[0]['id_acl_user'];
+        return $getId[0]['id_sg_usuario'];
+    }
+
+    public static function getCorreoByDecode($user)
+    {
+        $decodeUser = base64_decode($user);
+        return $decodeUser;
     }
 
     public function getIdUser($id)
     {
         $getId = Database::query([
-            'fields'    => "id_acl_user",
-            'table'     => "cms_acl_user",
-            'arguments' => "id_acl_user = '". Database::escapeSql($id) ."'"
+            'fields'    => "id_sg_usuario",
+            'table'     => "sg_usuarios",
+            'arguments' => "id_sg_usuario = '". Database::escapeSql($id) ."'"
         ])->records()->resultToArray();
 
         if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
             return [];
 
-        return $getId[0]['id_acl_user'];
+        return $getId[0]['id_sg_usuario'];
     }
 
     public function getIdZonaBySede($id)
@@ -71,15 +77,15 @@ class ModelGeneral
     public function getIdUserByEmail($email)
     {
         $getId = Database::query([
-            'fields'    => "id_acl_user",
-            'table'     => "cms_acl_user",
-            'arguments' => "email_acl_user = '". Database::escapeSql($email) ."'"
+            'fields'    => "id_sg_usuario",
+            'table'     => "sg_usuarios",
+            'arguments' => "correo = '". Database::escapeSql($email) ."'"
         ])->records()->resultToArray();
 
         if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
             return [];
 
-        return $getId[0]['id_acl_user'];
+        return $getId[0]['id_sg_usuario'];
     }
 
     public function getIdActividadById($id)
@@ -227,15 +233,15 @@ class ModelGeneral
     public function getCedulaByIdEmpleado($id)
     {
         $getId = Database::query([
-            'fields'    => "cedula_empleado",
-            'table'     => "cms_empleados",
-            'arguments' => "id_cms_empleado = '". Database::escapeSql($id) ."'"
+            'fields'    => "cedula_personal",
+            'table'     => "sg_mi_personal",
+            'arguments' => "id_sg_personal = '". Database::escapeSql($id) ."'"
         ])->records()->resultToArray();
 
         if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
             return [];
 
-        return $getId[0]['cedula_empleado'];
+        return $getId[0]['cedula_personal'];
     }
 
     public function checkIfTokenExist($token)

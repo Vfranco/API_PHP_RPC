@@ -26,33 +26,36 @@ class ModelEmpleados
             {
                 $empleadoExist = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "cms_empleados",
-                    'arguments'  => "cedula_empleado = '". $this->formData['cedula'] ."'"
+                    'table'      => "sg_mi_personal",
+                    'arguments'  => "cedula_personal = '". $this->formData['cedula'] ."'"
                 ]);
 
                 if($empleadoExist)
                     return ['status' => false, 'message' => "Este Empleado, se encuentra registrado"];
 
                 $saveEmpleado = Database::insert([
-                    'table'     => 'cms_empleados',
+                    'table'     => 'sg_mi_personal',
                     'values'    => [
-                        "cms_empresas_id_cms_empresa"   => ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']),
-                        "cms_estados_id_cms_estado"     => 1,
-                        "cms_sede_id_cms_sede"          => $this->formData['sede'],
-                        "cedula_empleado"               => $this->formData['cedula'],
-                        "nombres_empleado"	            => $this->formData['nombres'],
-                        "apellidos_empleado"	        => $this->formData['apellidos'],
-                        "direccion_empleado"            => $this->formData['direccion'],
-                        "telfono_empleado"              => $this->formData['telefono'],
-                        "email_empleado"                => $this->formData['email']
-                    ],                    
+                        "id_sg_empresa"         => ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']),
+                        "id_sg_sede"            => $this->formData['sede'],
+                        "id_sg_estado"          => 1,
+                        "cedula_personal"       => $this->formData['cedula'],
+                        "nombres_personal"	    => $this->formData['nombres'],
+                        "apellidos_personal"	=> $this->formData['apellidos'],
+                        "direccion_personal"    => $this->formData['direccion'],
+                        "telfono_personal"      => $this->formData['telefono'],
+                        "correo_personal"       => $this->formData['email'],
+                        "photo_personal"        => '0',
+                        "fecha_registro"        => Database::dateTime(),
+                        "creado_por"            => $this->formData['idEmpresa']
+                    ],
                     'autoinc'   => true                    
                 ])->affectedRow();
 
                 $lastId = Database::query([
-                    'fields'    => "id_registro_personal as id, CONCAT(nombres_registro, ' ', apellidos_registros) as prop",
-                    'table'     => "cms_registro_personal",
-                    'arguments' => "cedula_registro = '". $this->formData['cedula'] ."'"
+                    'fields'    => "id_sg_personal as id, CONCAT(nombres_personal, ' ', apellidos_personal) as prop",
+                    'table'     => "sg_mi_personal",
+                    'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
                 ])->records()->resultToArray();
 
                 if($saveEmpleado)
@@ -85,9 +88,9 @@ class ModelEmpleados
     public function ReadById()
     {
         $resultSet = Database::query([
-            'fields'    => "ce.id_cms_empleado, ce.cedula_empleado, ce.nombres_empleado, ce.apellidos_empleado, ce.direccion_empleado, ce.telefono_empleado, ce.email_empleado, cs.nombre_sede, ce.cms_estados_id_cms_estado, cs.id_cms_sede",
-            'table'     => "cms_empleados ce JOIN cms_sedes cs ON ce.cms_sede_id_cms_sede = cs.id_cms_sede",
-            'arguments' => "ce.id_cms_empleado = '". $this->formData['id_cms_empleado'] ."'"
+            'fields'    => "se.`id_sg_personal`, se.cedula_personal, se.`nombres_personal`,	se.`apellidos_personal`, se.`direccion_personal`, se.`telefono_personal`, se.`correo_personal`, se.`id_sg_estado`, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = se.id_sg_sede) AS nombre_sede, CONCAT(se.`nombres_personal`, ' ', se.`apellidos_personal`) AS empleado, se.id_sg_sede",
+            'table'     => "sg_mi_personal se",
+            'arguments' => "se.id_sg_personal = '". $this->formData['id_cms_empleado'] ."'"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -102,9 +105,9 @@ class ModelEmpleados
     public function ReadByEmpresa()
     {
         $resultSet = Database::query([
-            'fields'    => "ce.id_cms_empleado, ce.nombres_empleado, ce.apellidos_empleado, ce.direccion_empleado, ce.telefono_empleado, ce.email_empleado, cs.nombre_sede, ce.cms_estados_id_cms_estado, ce.cedula_empleado, CONCAT(ce.nombres_empleado, ' ', ce.apellidos_empleado) as empleado",
-            'table'     => "cms_empleados ce JOIN cms_sedes cs ON ce.cms_sede_id_cms_sede = cs.id_cms_sede",
-            'arguments' => "ce.cms_empresas_id_cms_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['uid']) ."' ORDER BY ce.id_cms_empleado DESC"
+            'fields'    => "se.`id_sg_personal`, se.cedula_personal, se.`nombres_personal`,	se.`apellidos_personal`, se.`direccion_personal`, se.`telefono_personal`, se.`correo_personal`, se.`id_sg_estado`, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = se.id_sg_sede) AS nombre_sede, CONCAT(se.`nombres_personal`, ' ', se.`apellidos_personal`) AS empleado",
+            'table'     => "sg_mi_personal se",
+            'arguments' => "se.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['uid']) ."' ORDER BY se.id_sg_personal DESC"            
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -159,17 +162,17 @@ class ModelEmpleados
             else
             {
                 $updateEmpleado = Database::update([
-                    'table'     => "cms_empleados",
+                    'table'     => "sg_mi_personal",
                     'fields'    => [                        
-                        "cms_sede_id_cms_sede"          => $this->formData['sede'],
-                        "cedula_empleado"               => $this->formData['cedula'],
-                        "nombres_empleado"	            => $this->formData['nombres'],
-                        "apellidos_empleado"	        => $this->formData['apellidos'],
-                        "direccion_empleado"            => $this->formData['direccion'],
-                        "telefono_empleado"              => $this->formData['telefono'],
-                        "email_empleado"                => $this->formData['email']
+                        "id_sg_sede"            => $this->formData['sede'],                        
+                        "cedula_personal"       => $this->formData['cedula'],
+                        "nombres_personal"	    => $this->formData['nombres'],
+                        "apellidos_personal"	=> $this->formData['apellidos'],
+                        "direccion_personal"    => $this->formData['direccion'],
+                        "telefono_personal"     => $this->formData['telefono'],
+                        "correo_personal"       => $this->formData['email']                        
                     ],
-                    'arguments' => "id_cms_empleado = '". $this->formData['id_cms_empleado'] ."'"                    
+                    'arguments' => "id_sg_personal = '". $this->formData['id_cms_empleado'] ."'"                    
                 ])->updateRow();
 
                 if($updateEmpleado)
@@ -191,11 +194,11 @@ class ModelEmpleados
             else
             {
                 $disableEmpleado = Database::update([
-                    'table'     => "cms_empleados",
+                    'table'     => "sg_mi_personal",
                     'fields'    => [
-                        'cms_estados_id_cms_estado'     => $this->formData['state']
+                        'id_sg_estado'     => $this->formData['state']
                     ],
-                    'arguments' => "id_cms_empleado = '". $this->formData['id_cms_empleado'] ."'"
+                    'arguments' => "id_sg_personal = '". $this->formData['id_cms_empleado'] ."'"
                 ])->updateRow();
 
                 if($disableEmpleado)
@@ -217,8 +220,8 @@ class ModelEmpleados
             else
             {
                 $deleteEmpleado = Database::delete([
-                    'table'     => "cms_empleados",                    
-                    'arguments' => "id_cms_empleado = '". $this->formData['id_cms_empleado'] ."'"
+                    'table'     => "sg_mi_personal",
+                    'arguments' => "id_sg_personal = '". $this->formData['id_cms_empleado'] ."'"
                 ])->deleteRow();
 
                 if($deleteEmpleado)

@@ -123,22 +123,18 @@ class ModelRegistros extends ModelGeneral
     {
         if(isset($this->formData['id_cms_empresa']))
         {
-            $id_cms_empresa = ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']);            
-
             $visitas = Database::query([
-                'fields'    => "*",
-                'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
-                'arguments' => "cra.cms_empresa_id_empresa = '". $id_cms_empresa ."' ORDER BY cra.id_cms_registro_actividad DESC"
+                'fields'    => "smp.cedula_personal, smp.nombres_personal, smp.apellidos_personal, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = smp.id_sg_sede) as nombre_sede, srmp.fecha_ingreso, srmp.fecha_salida",
+                'table'     => "sg_registros_mi_personal srmp JOIN sg_mi_personal smp ON srmp.`id_sg_personal` = smp.`id_sg_personal`",
+                'arguments' => "srmp.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."' ORDER BY srmp.id_sg_registro DESC"
             ])->records()->resultToArray();
         }
         else 
         {
-            $cedula_empleado = $this->getCedulaByIdEmpleado($this->formData['id_cms_empleado']);
-
             $visitas = Database::query([
                 'fields'    => "*",
-                'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
-                'arguments' => "cp.id_registro_personal = '". $this->getPersonalById($cedula_empleado) ."' ORDER BY cra.id_cms_registro_actividad DESC"
+                'table'     => "sg_registros_mi_personal srmp JOIN sg_mi_personal smp ON srmp.`id_sg_personal` = smp.`id_sg_personal`",
+                'arguments' => "srmp.id_sg_personal = '". $this->formData['id_cms_empleado'] ."' ORDER BY srmp.id_sg_registro DESC"
             ])->records()->resultToArray();
         }        
 
@@ -167,7 +163,7 @@ class ModelRegistros extends ModelGeneral
                     if($isDiferentField)
                         $arguments .= " AND";
 
-                    $arguments .= " cra.cms_registros_id_registro = '". $value ."'";
+                    $arguments .= " smp.id_sg_personal = '". $value ."'";
                     $isDiferentField = true;
                 }
             }
@@ -181,7 +177,7 @@ class ModelRegistros extends ModelGeneral
                     if($isDiferentField)
                         $arguments .= " AND";
 
-                    $arguments .= " cp.cms_sedes_id_cms_sede = '". $value ."'";
+                    $arguments .= " smp.id_sg_sede = '". $value ."'";
                     $isDiferentField = true;
                 }                
             }
@@ -189,13 +185,13 @@ class ModelRegistros extends ModelGeneral
             if($field == 'entradaSalida')
             {
                 if($value == '*')
-                    $arguments .= " AND fecha_ingreso BETWEEN '". $this->formData['desde'] ."' AND '". $this->formData['hasta'] ."' AND fecha_salida BETWEEN '". $this->formData['desde'] ."' AND '". $this->formData['hasta'] ."'";
+                    $arguments .= " AND smp.fecha_ingreso BETWEEN '". $this->formData['desde'] ." 00:00:00' AND '". $this->formData['hasta'] ." 23:59:59' AND smp.fecha_salida BETWEEN '". $this->formData['desde'] ." 00:00:00' AND '". $this->formData['hasta'] ." 23:59:59'";
                 else
                 {
                     if($isDiferentField)
                         $arguments .= " AND";
 
-                    $arguments .= " $value BETWEEN '". $this->formData['desde'] ."' AND '". $this->formData['hasta'] ."'";
+                    $arguments .= " $value BETWEEN '". $this->formData['desde'] ." 00:00:00' AND '". $this->formData['hasta'] ." 23:59:59'";
                     $isDiferentField = true;
                 }
             }
@@ -209,7 +205,7 @@ class ModelRegistros extends ModelGeneral
                     if($isDiferentField)
                         $arguments .= " AND";
 
-                    $arguments .= " cra.cms_empresa_id_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."'";
+                    $arguments .= " smp.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."'";
                     $isDiferentField = true;
                 }
             }            
@@ -217,7 +213,7 @@ class ModelRegistros extends ModelGeneral
 
         $visitas = Database::query([
             'fields'    => $this->formData['fields'],
-            'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
+            'table'     => "sg_mi_personal sg JOIN sg_registros_mi_personal smp ON sg.`id_sg_personal` = smp.`id_sg_personal` JOIN sg_sedes ss ON sg.`id_sg_sede` = ss.`id_sg_sede`",
             'arguments' => $arguments            
         ])->records()->resultToArray();
 
@@ -237,9 +233,9 @@ class ModelRegistros extends ModelGeneral
             $id_cms_empresa = ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']);            
 
             $visitas = Database::query([
-                'fields'    => "cp.cedula_registro as Cedula, cp.nombres_registro as Nombres, cp.apellidos_registros as Apellidos, cs.nombre_sede as Sede, cra.fecha_ingreso as Entrada, cra.fecha_salida as Salida",
-                'table'     => "cms_registro_personal cp JOIN cms_sedes cs ON cs.id_cms_sede = cp.cms_sedes_id_cms_sede JOIN cms_registro_actividad cra ON cp.id_registro_personal = cra.cms_registros_id_registro",
-                'arguments' => "cra.cms_empresa_id_empresa = '". $id_cms_empresa ."' ORDER BY cra.id_cms_registro_actividad DESC"
+                'fields'    => "sg.`cedula_personal` AS Cedula, sg.`nombres_personal` AS Nombres, sg.`apellidos_personal` AS Apellidos, ss.`nombre_sede` AS Sede, smp.`fecha_ingreso` AS Entrada, smp.`fecha_salida` AS Salida",
+                'table'     => "sg_mi_personal sg JOIN sg_registros_mi_personal smp ON sg.`id_sg_personal` = smp.`id_sg_personal` JOIN sg_sedes ss ON sg.`id_sg_sede` = ss.`id_sg_sede`",
+                'arguments' => "sg.`id_sg_empresa` = '". $id_cms_empresa ."' ORDER BY smp.`id_sg_registro` DESC"
             ])->records()->resultToArray();
         }        
 

@@ -230,7 +230,7 @@ class Database extends Statement
      */
     public static function date()
     {
-        $resultSetDate = self::executeQuery('SELECT DATE_FORMAT(now(), "%Y:%m:%d") as `fechaServidor`');
+        $resultSetDate = self::executeQuery('SELECT DATE_FORMAT(now(), "%Y-%m-%d") as `fechaServidor`');
 
         $date = mysqli_fetch_assoc($resultSetDate);
         self::freeResult($resultSetDate);

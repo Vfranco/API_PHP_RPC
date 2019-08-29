@@ -19,9 +19,9 @@ class ModelReportes
     public function ReportePorSedes()
     {
         $result = Database::query([
-            'fields'    => "distinct cs.nombre_sede as sede, (select count(id_cms_registro_actividad) from cms_registro_actividad where cms_sedes_id_cms_sede = cs.id_cms_sede) as visitas",
-            'table'     => "cms_sedes cs join cms_registro_actividad cra ON cs.id_cms_sede = cra.cms_sedes_id_cms_sede",
-            'arguments' => "cs.cms_empresas_id_cms_empresas = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."'"
+            'fields'    => "ss.`nombre_sede` as sede, (SELECT COUNT(`id_sg_registro`) FROM `sg_registros_mi_personal` WHERE id_sg_sede = ss.`id_sg_sede`) AS visitas",
+            'table'     => "sg_sedes ss",
+            'arguments' => "ss.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."'"
         ])->records()->resultToArray();
 
         if(isset($result[0]['empty']) && $result[0]['empty'] == true)

@@ -54,9 +54,9 @@ class ModelAuthentication extends ModelGeneral
         else 
         {
             $auth = Database::query([
-                'fields'    => "cu.id_acl_user as idAclUser, CONCAT(cu.fname_acl_user, ' ', cu.lname_acl_user) as fullname, ce.id_cms_empresas as idCmsEmpresa, ce.nombre_empresa as nombreEmpresa, cs.id_cms_sede as idSede, cs.nombre_sede as nombreSede",
-                'table'     => "cms_acl_user cu join cms_empresas ce on cu.cms_empresas_id_cms_empresas = ce.id_cms_empresas join cms_sedes cs on cs.cms_empresas_id_cms_empresas = ce.id_cms_empresas",
-                'arguments' => "cu.email_acl_user = '". Database::escapeSql($this->aclUser) ."' and cu.password_acl_user = '". Database::escapeSql($this->aclPass) ."' limit 1"            
+                'fields'    => "*",
+                'table'     => "sg_usuarios",
+                'arguments' => "correo = '". Database::escapeSql($this->aclUser) ."' and password = '". Database::escapeSql($this->aclPass) ."' LIMIT 1"
             ])->records()->resultToArray();
     
             if(isset($auth[0]['empty']) && $auth[0]['empty'] == true)
@@ -161,9 +161,9 @@ class ModelAuthentication extends ModelGeneral
     private function checkIfActive($user)
     {
         $active = Database::query([
-            'fields'    => "cu.cms_estados_id_cms_estados as Usuario, ce.cms_estados_id_cms_estados as Empresa, cd.cms_estados_id_cms_estados as Dispositivo",
-            'table'     => "cms_acl_user cu join cms_empresas ce on cu.id_acl_user = ce.id_acl_user_empresa_fk join cms_dispositivos cd on ce.id_cms_empresas = cd.cms_empresas_id_cms_empresas",
-            'arguments' => "cu.email_acl_user = '". Database::escapeSql($user) ."'"
+            'fields'    => "id_sg_estado",
+            'table'     => "sg_usuarios",
+            'arguments' => "correo = '". Database::escapeSql($user) ."' LIMIT 1"
         ])->records()->resultToArray();
 
         if(isset($active[0]['empty']) && $active[0]['empty'] == true)
@@ -173,7 +173,7 @@ class ModelAuthentication extends ModelGeneral
 
         foreach($active[0] as $key => $value)
         {
-            if($value != '1')
+            if($value != 1)
             {
                 $result = ['status' => false, 'message' => $key . " no se encuentra activo"];
                 break;
@@ -189,9 +189,9 @@ class ModelAuthentication extends ModelGeneral
     private function isSessionActive($id)
     {
         $isActive = Database::query([
-            'fields'    => "id_log_user_online",
-            'table'     => "cms_log_user_online",
-            'arguments' => "cms_acl_user_id_acl_user = '". Database::escapeSql($id) ."'"
+            'fields'    => "id_sg_usuario",
+            'table'     => "sg_usuarios_en_linea",
+            'arguments' => "id_sg_usuario = '". Database::escapeSql($id) ."'"
         ])->records()->resultToArray();
 
         if(isset($isActive[0]['empty']) && $isActive[0]['empty'] == true)

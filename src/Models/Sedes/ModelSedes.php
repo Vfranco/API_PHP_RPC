@@ -27,7 +27,7 @@ class ModelSedes
             {
                 $sedeExist = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "cms_sedes",
+                    'table'      => "sg_sedes",
                     'arguments'  => "nombre_sede = '". $this->formData['nombreSede'] ."'"
                 ]);
 
@@ -35,13 +35,15 @@ class ModelSedes
                     return ['status' => false, 'message' => "La Sede se encuentra registrada"];
 
                 $saveSede = Database::insert([
-                    'table'     => 'cms_sedes',
+                    'table'     => 'sg_sedes',
                     'values'    => [
-                        "cms_empresas_id_cms_empresas"  => ModelGeneral::getIdEmpresaByUser($this->formData['idUser']),
-                        "cms_estados_id_cms_estados"    => 1,
-                        "nombre_sede"	                => $this->formData['nombreSede'],
-                        "dir_sede"                      => $this->formData['dirSede'],
-                        "telefono_sede"                 => $this->formData['telefonoSede']
+                        "id_sg_empresa"     => ModelGeneral::getIdEmpresaByUser($this->formData['idUser']),
+                        "id_sg_estado"      => 1,
+                        "nombre_sede"	    => $this->formData['nombreSede'],
+                        "dir_sede"          => $this->formData['dirSede'],
+                        "telefono_sede"     => $this->formData['telefonoSede'],
+                        "fecha_creacion"    => Database::dateTime(),
+                        "creado_por"        => $this->formData['idUser']
                     ],                    
                     'autoinc'   => true
                 ])->affectedRow();
@@ -60,8 +62,8 @@ class ModelSedes
     public static function Read()
     {
         $resultSet = Database::query([
-            'fields'    => "id_cms_sede as id, nombre_sede as sede",
-            'table'     => "cms_sedes",
+            'fields'    => "id_sg_sede as id, nombre_sede as sede",
+            'table'     => "sg_sedes",
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -77,8 +79,8 @@ class ModelSedes
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_sedes",
-            'arguments' => "id_cms_sede = '". $this->formData['id_cms_sede'] ."'"
+            'table'     => "sg_sedes",
+            'arguments' => "id_sg_sede = '". $this->formData['id_cms_sede'] ."'"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -94,8 +96,8 @@ class ModelSedes
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_sedes",
-            'arguments' => "cms_empresas_id_cms_empresas = '". ModelGeneral::getIdEmpresaByUser($this->formData['idusuario']) ."' ORDER BY id_cms_sede DESC"
+            'table'     => "sg_sedes",
+            'arguments' => "id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['idusuario']) ."' ORDER BY id_sg_sede DESC"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -111,7 +113,7 @@ class ModelSedes
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_sedes",
+            'table'     => "sg_sedes",
             'arguments' => $this->formData['argument']            
         ])->records()->resultToArray();
 
@@ -133,13 +135,13 @@ class ModelSedes
             else
             {
                 $updateSede = Database::update([
-                    'table'     => "cms_sedes",
+                    'table'     => "sg_sedes",
                     'fields'    => [                        
                         "nombre_sede"	                => $this->formData['nombreSede'],
-                        "dir_sede"                      => $this->formData['dirSede'],
+                        "direccion_sede"                => $this->formData['dirSede'],
                         "telefono_sede"                 => $this->formData['telefonoSede']
                     ],
-                    'arguments' => "id_cms_sede = '". $this->formData['idSede'] ."'"
+                    'arguments' => "id_sg_sede = '". $this->formData['idSede'] ."'"
                 ])->updateRow();
 
                 if($updateSede)
@@ -161,17 +163,17 @@ class ModelSedes
             else
             {
                 $disableSede = Database::update([
-                    'table'     => "cms_sedes",
+                    'table'     => "sg_sedes",
                     'fields'    => [                        
-                        'cms_estados_id_cms_estados'    => $this->formData['estado']
+                        'id_sg_estado'    => $this->formData['estado']
                     ],
-                    'arguments' => "id_cms_sede = '". $this->formData['id_cms_sede'] ."'"
+                    'arguments' => "id_sg_sede = '". $this->formData['id_cms_sede'] ."'"
                 ])->updateRow();
 
                 if($disableSede)
-                    return ['status' => true, 'message' => 'Zona Deshabilitada'];
+                    return ['status' => true, 'message' => 'Sede Deshabilitada'];
                 else
-                    return ['status' => false, 'message' => 'Ha ocurrido un error al deshabilitar la Zona'];
+                    return ['status' => false, 'message' => 'Ha ocurrido un error al deshabilitar la Sede'];
             }
         } catch (\Exception $e){
             return ['status' => false, 'message' => $e->getMessage()];
@@ -188,16 +190,16 @@ class ModelSedes
             {
                 $sedeExist = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "cms_empleados",
-                    'arguments'  => "cms_sede_id_cms_sede = '". $this->formData['id_cms_sede'] ."'"
+                    'table'      => "sg_mi_personal",
+                    'arguments'  => "id_sg_sede = '". $this->formData['id_cms_sede'] ."'"
                 ]);
 
                 if($sedeExist)
                     return ['status' => false, 'message' => "Tienes un empleado, o empleados asociados a esta sede"];
 
                 $deleteSede = Database::delete([
-                    'table'     => "cms_sedes",
-                    'arguments' => "id_cms_sede = '". $this->formData['id_cms_sede'] ."'"
+                    'table'     => "sg_sedes",
+                    'arguments' => "id_sg_sede = '". $this->formData['id_cms_sede'] ."'"
                 ])->deleteRow();
 
                 if($deleteSede)

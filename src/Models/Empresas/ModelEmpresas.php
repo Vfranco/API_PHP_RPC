@@ -27,7 +27,7 @@ class ModelEmpresas
             {
                 $empresaExist = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "cms_empresas",
+                    'table'      => "sg_empresas",
                     'arguments'  => "nit_empresa = '". $this->formData['nitEmpresa'] ."'"
                 ]);
 
@@ -35,15 +35,17 @@ class ModelEmpresas
                     return ['status' => false, 'message' => "La empresa ya se encuentra registrada"];
 
                 $saveEmpresa = Database::insert([
-                    'table'     => 'cms_empresas',
-                    'values'    => [
-                        "cms_estados_id_cms_estados"	=> 1,
-                        "id_acl_user_empresa_fk"		=> ModelGeneral::getIdUserByDecode($this->formData['usuario']),
-                        "nombre_empresa"				=> $this->formData['nombreEmpresa'],
-                        "nit_empresa"					=> $this->formData['nitEmpresa'],
-                        "email_empresa"	    			=> $this->formData['emailEmpresa'],
-                        "dir_empresa"                   => $this->formData['dirEmpresa'],
-                        "max_dispositivos"              => 1
+                    'table'     => 'sg_empresas',
+                    'values'    => [                        
+                        "id_sg_usuario"         => ModelGeneral::getIdUserByDecode($this->formData['usuario']),
+                        "id_sg_estado"	        => 1,
+                        "id_sg_tipo_registro"   => $this->formData['tiporegistro'],
+                        "nit_empresa"		    => $this->formData['nitEmpresa'],
+                        "nombre_empresa"	    => $this->formData['nombreEmpresa'],                        
+                        "correo_empresa"	    => $this->formData['emailEmpresa'],
+                        "direccion_empresa"     => $this->formData['dirEmpresa'],
+                        "telefono_celular"      => $this->formData['celularEmpresa'],
+                        'fecha_registro'        => Database::dateTime()
                     ],
                     'autoinc'   => true                    
                 ])->affectedRow();
@@ -78,9 +80,9 @@ class ModelEmpresas
     public function ReadByUser()
     {
         $resultSet = Database::query([
-            'fields'    => "id_cms_empresas, nombre_empresa as empresa, nit_empresa as nit, email_empresa as email, dir_empresa as direccion, max_dispositivos as dispositivos, cms_estados_id_cms_estados as estado",
-            'table'     => "cms_empresas",
-            'arguments' => "id_acl_user_empresa_fk = '". ModelGeneral::getIdUserByDecode($this->formData['uid']) ."'"            
+            'fields'    => "id_sg_empresa, nombre_empresa as empresa, nit_empresa as nit, correo_empresa as email, direccion_empresa as direccion, id_sg_estado as estado",
+            'table'     => "sg_empresas",
+            'arguments' => "id_sg_usuario = '". ModelGeneral::getIdUserByDecode($this->formData['uid']) ."'"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -95,9 +97,9 @@ class ModelEmpresas
     public function ReadById()
     {
         $resultSet = Database::query([
-            'fields'    => "id_cms_empresas, nombre_empresa as empresa, nit_empresa as nit, email_empresa as email, dir_empresa as direccion, max_dispositivos as dispositivos, cms_estados_id_cms_estados as estado",
-            'table'     => "cms_empresas",
-            'arguments' => "id_cms_empresas = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresas']) ."'"
+            'fields'    => "id_sg_empresa, nombre_empresa as empresa, nit_empresa as nit, correo_empresa as email, direccion_empresa as direccion, id_sg_estado as estado, telefono_celular",
+            'table'     => "sg_empresas",
+            'arguments' => "id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresas']) ."'"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -152,15 +154,14 @@ class ModelEmpresas
             else
             {
                 $updateArticulo = Database::update([
-                    'table'     => "cms_empresas",
+                    'table'     => "sg_empresas",
                     'fields'    => [                        
-                        "nombre_empresa"				=> $this->formData['nombreEmpresa'],
-                        "nit_empresa"					=> $this->formData['nitEmpresa'],
-                        "email_empresa"	    			=> $this->formData['emailEmpresa'],
-                        "dir_empresa"                   => $this->formData['dirEmpresa'],
-                        "max_dispositivos"              => 1
+                        "nit_empresa"		    => $this->formData['nitEmpresa'],
+                        "nombre_empresa"	    => $this->formData['nombreEmpresa'],                        
+                        "correo_empresa"	    => $this->formData['emailEmpresa'],
+                        "direccion_empresa"     => $this->formData['dirEmpresa']                        
                     ],
-                    'arguments' => "id_cms_empresas = '". $this->formData['id_cms_empresas'] ."'"
+                    'arguments' => "id_sg_empresa = '". $this->formData['id_cms_empresas'] ."'"
                 ])->updateRow();
 
                 if($updateArticulo)

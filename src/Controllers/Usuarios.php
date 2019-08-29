@@ -23,4 +23,20 @@ class Usuarios
         $obj = new ModelUsuarios(Request::phpInput());
         Response::status(200)->json($obj->CheckEmail());
     }
+
+    static function UpdateTipoRegistro()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelUsuarios(Request::phpInput());
+        Response::status(200)->json($obj->UpdateTipoRegistro());
+    }
+
+    static function UpdateTipoControl()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelUsuarios(Request::phpInput());
+        Response::status(200)->json($obj->UpdateTipoControl());
+    }
 }

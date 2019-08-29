@@ -3,7 +3,7 @@
 namespace Models\Usuarios;
 
 use Database\Database;
-use Core\{Validate};
+use Core\{Validate, Helper};
 use Models\General\ModelGeneral;
 
 class ModelUsuarios
@@ -26,63 +26,78 @@ class ModelUsuarios
             {
                 $usuarioExist = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "cms_acl_user",
-                    'arguments'  => "email_acl_user = '". $this->formData['correo'] ."'"
+                    'table'      => "sg_registros",
+                    'arguments'  => "correo = '". $this->formData['correo'] ."'"
                 ]);
 
                 if($usuarioExist)
                     return ['status' => false, 'message' => "Ya tienes una cuenta, puedes iniciar sesión"];
 
-                $saveUsuario = Database::insert([
-                    'table'     => 'cms_acl_user',
-                    'values'    => [                        
-                        "cms_estados_id_cms_estados"    => 1,
-                        "cms_plan_id_plan"              => $this->formData['plan'],
-                        "cms_empresas_id_cms_empresas"  => 1,
-                        "credential_acl_user"	        => Validate::randomNumber(),
-                        "fname_acl_user"                => $this->formData['nombres'],
-                        "lname_acl_user"                => $this->formData['apellidos'],
-                        "password_acl_user"             => $this->formData['pass'],
-                        "gender_acl_user"               => 'M',
-                        "day_of_birth_acl_user"         => Database::date(),
-                        "phone_1_acl_user"              => 0,
-                        "address_acl_user"              => "N/A",
-                        "email_acl_user"                => $this->formData['correo'],
-                        "is_send_email"                 => 1,
-                        "date_create_acl_user"          => Database::dateTime(),
-                        "ic_acl_user_create"            => 1,
-                        "entry_point"                   => "#!/empresas"
+                $saveRegistro = Database::insert([
+                    'table'     => 'sg_registros',
+                    'values'    => [                                                
+                        "id_sg_plan"                    => $this->formData['plan'],
+                        "id_sg_tipo_control"            => 3,
+                        "nombres"                       => $this->formData['nombres'],
+                        "apellidos"                     => $this->formData['apellidos'],
+                        "correo"                        => $this->formData['correo'],
+                        "acepta_acuerdos"               => 1,
+                        "fecha_registro"                => Database::dateTime()
                     ],                    
                     'autoinc'   => true                    
                 ])->affectedRow();
 
                 $getId = Database::query([
-                    'fields'    => "id_acl_user",
-                    'table'     => "cms_acl_user",
-                    'arguments' => "email_acl_user = '". $this->formData['correo'] ."' ORDER by id_acl_user DESC"
-                ])->assoc('id_acl_user');
+                    'fields'    => "id_sg_registro",
+                    'table'     => "sg_registros",
+                    'arguments' => "correo = '". $this->formData['correo'] ."' ORDER by id_sg_registro DESC"
+                ])->assoc('id_sg_registro');
+
+                $saveUsuario = Database::insert([
+                    'table'     => 'sg_usuarios',
+                    'values'    => [
+                        'id_sg_registro'        => $getId,
+                        'id_sg_tipo_registro'   => 1,
+                        'id_sg_estado'          => 1,                        
+                        'correo'                => $this->formData['correo'],
+                        'password'              => $this->formData['pass'],
+                        'intentos'              => 1,
+                        'bienvenida'            => 0,
+                        'fecha_expiracion'      => Helper::setExpirationDate(Database::date(), Helper::getDaysFromPlan($this->formData['plan'])),
+                        'endpoint'              => '#!/empresas'
+                    ],
+                    'autoinc'   => true
+                ])->affectedRow();
+
+                $getIdUser = Database::query([
+                    'fields'    => "id_sg_usuario",
+                    'table'     => "sg_usuarios",
+                    'arguments' => "id_sg_registro = '". $getId ."' ORDER by id_sg_registro DESC"
+                ])->assoc('id_sg_usuario');
+
+                $inc = 1;
 
                 foreach(MENU_DEFAULT as $key => $value)
                 {
-                    $inc = 1;
-
-                    Database::insert(
+                    $saveMenu = Database::insert(
                     [
-                        'table'     => "cms_menu_usuarios",
+                        'table'     => "sg_menu_usuarios",
                         'values'    => [
-                            "cms_acl_user_id_acl_user"          => $getId,
-                            "cms_estados_id_cms_estados"        => $value['estado'],
-                            "nombre_menu"                       => $key,
-                            "href_menu"                         => $value['href'],
-                            "icon_menu"                         => $value['icon'],
-                            "color_menu"                        => $value['color'],
-                            "posicion_menu"                     => $inc++
+                            "id_sg_usuario" => $getIdUser,
+                            "id_sg_estado"  => $value['estado'],
+                            "nombre_menu"   => $key,
+                            "href_menu"     => $value['href'],
+                            "icon_menu"     => $value['icon'],
+                            "color_menu"    => $value['color'],
+                            "posicion_menu" => $inc
                         ],
-                        'autoinc'   => true
+                        'autoinc'   => true                        
                     ])->affectedRow();
+
+                    $inc++;
                 }
 
-                if($saveUsuario)
+                if($saveRegistro && $saveUsuario && $saveMenu)
                     return ['status' => true, 'message' => 'Usuario Registrado'];
                 else
                     return ['status' => false, 'message' => 'Ha ocurrido un error al crear el Usuario'];
@@ -101,8 +116,8 @@ class ModelUsuarios
         {
             $emailExist = ModelGeneral::recordExist([
                 'fields'     => "*",
-                'table'      => "cms_acl_user",
-                'arguments'  => "email_acl_user = '". $this->formData['correo'] ."'"
+                'table'      => "sg_registros",
+                'arguments'  => "correo = '". $this->formData['correo'] ."'"
             ]);
 
             if($emailExist)
@@ -214,5 +229,58 @@ class ModelUsuarios
         } catch (\Exception $e){
             return ['status' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    public function UpdateTipoRegistro()
+    {
+        try
+        {
+            if(Validate::notEmptyFields($this->formData))
+                return ['status' => false, 'message' => 'Los campos son obligatorios'];
+            else
+            {
+                $updateTipoRegistro = Database::update([
+                    'table'     => "sg_usuarios",
+                    'fields'    => [
+                        'id_sg_tipo_registro'   => $this->formData['tiporegistro'],
+                        'entrypoint'            => $this->formData['entrypoint']
+                    ],
+                    'arguments' => "id_sg_usuario = '". ModelGeneral::getIdUserByDecode($this->formData['user']) ."'"
+                ])->updateRow();
+
+                if($updateTipoRegistro)
+                    return ['status' => true, 'message' => 'Usuario Actualizado'];
+                else
+                    return ['status' => false, 'message' => 'Ha ocurrido un error al actualizar el Autorizado'];
+            }
+        } catch (\Exception $e){
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function UpdateTipoControl()
+    {
+        try
+        {
+            if(Validate::notEmptyFields($this->formData))
+                return ['status' => false, 'message' => 'Los campos son obligatorios'];
+            else
+            {
+                $updateTipoControl = Database::update([
+                    'table'     => "sg_registros",
+                    'fields'    => [
+                        'id_sg_tipo_control' => $this->formData['control']
+                    ],
+                    'arguments' => "correo = '". ModelGeneral::getCorreoByDecode($this->formData['user']) ."'"
+                ])->updateRow();
+
+                if($updateTipoControl)
+                    return ['status' => true, 'message' => 'Control Actualizado'];
+                else
+                    return ['status' => false, 'message' => 'Ha ocurrido un error al actualizar el Control'];
+            }
+        } catch (\Exception $e){
+            return ['status' => false, 'message' => $e->getMessage()];
+        }        
     }
 }
