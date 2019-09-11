@@ -15,12 +15,11 @@ define('CMS_VERSION',   '1.0');
 /**
  * BASE_URL - Local
  */
-define('BASE_URL', 'http://localapi.sigga.com/');
+define('BASE_URL', 'http://api.sigga.com/');
 
 /**
  * BASE_URL - Server
  */
-//define('BASE_URL', 'http://site.nomasplanillas.com/');
 
 /**
  * Action Verbs

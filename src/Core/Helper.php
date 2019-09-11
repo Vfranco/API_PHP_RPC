@@ -24,4 +24,9 @@ class Helper
 
         return (int)$getDays;
     }
+
+    static function dontApply($data)
+    {
+        return (!isset($data) && empty($data)) ? 'N/A' : $data;
+    }
 }

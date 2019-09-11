@@ -39,4 +39,12 @@ class Usuarios
         $obj = new ModelUsuarios(Request::phpInput());
         Response::status(200)->json($obj->UpdateTipoControl());
     }
+
+    static function ChangeTipoRegistro()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelUsuarios(Request::phpInput());
+        Response::status(200)->json($obj->ChangeTipoRegistro());
+    }
 }

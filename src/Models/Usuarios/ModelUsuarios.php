@@ -283,4 +283,48 @@ class ModelUsuarios
             return ['status' => false, 'message' => $e->getMessage()];
         }        
     }
+
+    public function ChangeTipoRegistro()
+    {
+        try
+        {
+            if(Validate::notEmptyFields($this->formData))
+                return ['status' => false, 'message' => 'Los campos son obligatorios'];
+            else
+            {
+                $changeTipoRegistro = Database::update([
+                    'table'     => "sg_registros",
+                    'fields'    => [
+                        'id_sg_tipo_control' => 1
+                    ],
+                    'arguments' => "correo = '". ModelGeneral::getCorreoByDecode($this->formData['user']) ."'"
+                ])->updateRow();
+
+                $changeEntryPoint = Database::update([
+                    'table'     => "sg_usuarios",
+                    'fields'    => [
+                        'entrypoint' => '#!/empresas'
+                    ],
+                    'arguments' => "correo = '". ModelGeneral::getCorreoByDecode($this->formData['user']) ."'"
+                ])->updateRow();
+
+                Database::delete([
+                    'table'     => "sg_empresas",                    
+                    'arguments' => "id_sg_usuario = '". ModelGeneral::getIdUserByDecode($this->formData['user']) ."'"
+                ])->deleteRow();
+
+                Database::delete([
+                    'table'     => "sg_sedes",
+                    'arguments' => "creado_por = '". $this->formData['user'] ."'"
+                ])->deleteRow();
+
+                if($changeTipoRegistro && $changeEntryPoint)
+                    return ['status' => true, 'message' => 'Actualizado'];
+                else
+                    return ['status' => false, 'message' => 'Ha ocurrido un error al actualizar el Control'];
+            }
+        } catch (\Exception $e){
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
 }

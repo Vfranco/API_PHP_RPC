@@ -25,15 +25,6 @@ class ModelSedes
                 return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
-                $sedeExist = ModelGeneral::recordExist([
-                    'fields'     => "*",
-                    'table'      => "sg_sedes",
-                    'arguments'  => "nombre_sede = '". $this->formData['nombreSede'] ."'"
-                ]);
-
-                if($sedeExist)
-                    return ['status' => false, 'message' => "La Sede se encuentra registrada"];
-
                 $saveSede = Database::insert([
                     'table'     => 'sg_sedes',
                     'values'    => [

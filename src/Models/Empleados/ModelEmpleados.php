@@ -24,15 +24,6 @@ class ModelEmpleados
                 return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
-                $empleadoExist = ModelGeneral::recordExist([
-                    'fields'     => "*",
-                    'table'      => "sg_mi_personal",
-                    'arguments'  => "cedula_personal = '". $this->formData['cedula'] ."'"
-                ]);
-
-                if($empleadoExist)
-                    return ['status' => false, 'message' => "Este Empleado, se encuentra registrado"];
-
                 $saveEmpleado = Database::insert([
                     'table'     => 'sg_mi_personal',
                     'values'    => [
@@ -106,7 +97,7 @@ class ModelEmpleados
     {
         $resultSet = Database::query([
             'fields'    => "se.`id_sg_personal`, se.cedula_personal, se.`nombres_personal`,	se.`apellidos_personal`, se.`direccion_personal`, se.`telefono_personal`, se.`correo_personal`, se.`id_sg_estado`, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = se.id_sg_sede) AS nombre_sede, CONCAT(se.`nombres_personal`, ' ', se.`apellidos_personal`) AS empleado",
-            'table'     => "sg_mi_personal se",
+            'table'     => "sg_mi_personal se JOIN sg_sedes ss ON se.id_sg_sede = ss.id_sg_sede",
             'arguments' => "se.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['uid']) ."' ORDER BY se.id_sg_personal DESC"            
         ])->records()->resultToArray();
 

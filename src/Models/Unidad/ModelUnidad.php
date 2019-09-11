@@ -47,9 +47,25 @@ class ModelUnidad
                         "creado_por"                    => $this->formData['idUser']
                     ],                    
                     'autoinc'   => true                    
-                ])->affectedRow();                
+                ])->affectedRow();
+                
+                $saveEmpresa = Database::insert([
+                    'table'     => 'sg_empresas',
+                    'values'    => [                        
+                        "id_sg_usuario"         => ModelGeneral::getIdUserByDecode($this->formData['idUser']),
+                        "id_sg_estado"	        => 1,
+                        "id_sg_tipo_registro"   => $this->formData['tiporegistro'],
+                        "nit_empresa"		    => $this->formData['nitUnidad'],
+                        "nombre_empresa"	    => $this->formData['nombreUnidad'],                        
+                        "correo_empresa"	    => $this->formData['emailUnidad'],
+                        "direccion_empresa"     => $this->formData['direccionUnidad'],
+                        "telefono_celular"      => $this->formData['telefonoUnidad'],
+                        'fecha_registro'        => Database::dateTime()
+                    ],
+                    'autoinc'   => true                    
+                ])->affectedRow();
 
-                if($saveUnidad)
+                if($saveUnidad && $saveEmpresa)
                     return ['status' => true, 'message' => 'Unidad Registrada'];
                 else
                     return ['status' => false, 'message' => 'Ha ocurrido un error al crear la Unidad'];
