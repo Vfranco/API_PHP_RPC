@@ -24,24 +24,16 @@ class ModelApartamentos
                 return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
-                $apartamentoExist = ModelGeneral::recordExist([
-                    'fields'     => "*",
-                    'table'      => "sg_apartamentos",
-                    'arguments'  => "numero_apto = '". $this->formData['numeroApartamento'] ."'"
-                ]);
-
-                if($apartamentoExist)
-                    return ['status' => false, 'message' => "Este Apartamento, se encuentra registrado"];
-
                 $saveApartamento = Database::insert([
                     'table'     => 'sg_apartamentos',
                     'values'    => [
-                        "id_sg_unidad_residencial"      => $this->formData['estado'],
-                        "id_sg_estado"	                => $this->formData['estadoApartamento'],
+                        "id_sg_unidad_residencial"      => ModelGeneral::getIdUnidadResidencialByUser($this->formData['idUser']),
+                        "id_sg_torre"                   => $this->formData['torre'],
+                        "id_sg_estado"	                => $this->formData['estado'],
                         "piso_apto"	                    => $this->formData['pisoApartamento'],
                         "numero_apto"	                => $this->formData['numeroApartamento'],
                         "fecha_creacion"                => Database::dateTime(),
-                        "creado_por"                    => $this->formData['uid']
+                        "creado_por"                    => $this->formData['idUser']
                     ],                    
                     'autoinc'   => true
                 ])->affectedRow();
@@ -62,7 +54,7 @@ class ModelApartamentos
         $resultSet = Database::query([
             'fields'    => "*",
             'table'     => "sg_apartamentos",
-            'arguments' => "creado_por = '". $this->formData['uid'] ."'"
+            'arguments' => "creado_por = '". $this->formData['uid'] ."' ORDER BY id_sg_apto DESC"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -74,6 +66,23 @@ class ModelApartamentos
         ];
     }    
 
+    public function ReadByIdApto()
+    {
+        $resultSet = Database::query([
+            'fields'    => "sa.id_sg_apto, st.id_sg_torre, st.nombre_torre, sa.piso_apto, sa.numero_apto, sa.id_sg_estado",
+            'table'     => "sg_apartamentos sa JOIN sg_torres st ON sa.id_sg_torre = st.id_sg_torre",
+            'arguments' => "sa.id_sg_apto = '". $this->formData['id'] ."'"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron registros'];
+        
+        return [
+            'status'    => true,
+            'rows'      => $resultSet
+        ];
+    }
+
     public function Update()
     {
         try
@@ -82,19 +91,18 @@ class ModelApartamentos
                 return ['status' => false, 'message' => 'Los campos son obligatorios'];
             else
             {
-                $updateAutorizado = Database::update([
+                $updateApartamento = Database::update([
                     'table'     => "sg_apartamentos",
                     'fields'    => [
-                        "id_sg_estado"	                => $this->formData['estadoApartamento'],
+                        "id_sg_torre"                   => $this->formData['torre'],
+                        "id_sg_estado"	                => $this->formData['estado'],
                         "piso_apto"	                    => $this->formData['pisoApartamento'],
                         "numero_apto"	                => $this->formData['numeroApartamento'],
-                        "fecha_creacion"                => Database::dateTime(),
-                        "creado_por"                    => $this->formData['uid']
                     ],
-                    'arguments' => "id_sg_apto = '". $this->formData['id_sg_apto'] ."'"
+                    'arguments' => "id_sg_apto = '". $this->formData['idApto'] ."'"
                 ])->updateRow();
 
-                if($updateAutorizado)
+                if($updateApartamento)
                     return ['status' => true, 'message' => 'Apartamento Actualizado'];
                 else
                     return ['status' => false, 'message' => 'Ha ocurrido un error al actualizar el Apartamento'];
@@ -112,9 +120,18 @@ class ModelApartamentos
                 return ['status' => false, 'message' => 'Los campos son obligatorios'];
             else
             {
+                $aptoHasResidentes = ModelGeneral::recordExist([
+                    'fields'     => "*",
+                    'table'      => "sg_residentes",
+                    'arguments'  => "id_sg_apto = '". $this->formData['id'] ."'"
+                ]);
+
+                if($aptoHasResidentes)
+                    return ['status' => false, 'message' => 'Al parecer tienes residentes en este apartamento'];
+
                 $deleteArl = Database::delete([
                     'table'     => "sg_apartamentos",                    
-                    'arguments' => "id_sg_apto = '". $this->formData['id_sg_apto'] ."'"
+                    'arguments' => "id_sg_apto = '". $this->formData['id'] ."'"
                 ])->deleteRow();
 
                 if($deleteArl)

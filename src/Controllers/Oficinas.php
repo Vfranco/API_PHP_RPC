@@ -42,6 +42,13 @@ class Oficinas
         Response::status(200)->json($obj->ReadByName());
     }
 
+    static function ResumenEmpleadosOficina()
+    {
+        ActionFilters::Get();
+        $obj = new ModelOficinas(Request::phpInput());
+        Response::status(200)->json($obj->ResumenEmpleadosOficina());
+    }
+
     static function Update()
     {
         ActionFilters::Get();

@@ -274,6 +274,25 @@ class ModelUsuarios
                     'arguments' => "correo = '". ModelGeneral::getCorreoByDecode($this->formData['user']) ."'"
                 ])->updateRow();
 
+                if($this->formData['control'] == 1)
+                {
+                    Database::update([
+                        'table'     => "sg_menu_usuarios",
+                        'fields'    => [
+                            'href_menu' => '#!/residencial'
+                        ],
+                        'arguments' => "id_sg_usuario = '". ModelGeneral::getIdUserByDecode($this->formData['user']) ."' AND nombre_menu = 'Mis Visitantes'"
+                    ])->updateRow();
+
+                    Database::update([
+                        'table'     => "sg_usuarios",
+                        'fields'    => [                            
+                            'entrypoint'            => '#!/residencial'
+                        ],
+                        'arguments' => "id_sg_usuario = '". ModelGeneral::getIdUserByDecode($this->formData['user']) ."'"
+                    ])->updateRow();
+                }
+
                 if($updateTipoControl)
                     return ['status' => true, 'message' => 'Control Actualizado'];
                 else

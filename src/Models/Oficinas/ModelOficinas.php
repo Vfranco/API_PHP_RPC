@@ -124,7 +124,7 @@ class ModelOficinas
             return ['status' => false, 'message' => 'No se encontraron registros'];
 
         $integrantes = Database::query([
-            'fields'    => "CONCAT(nombres_personal, ' ', apellidos_personal) as empleado, se.nombre_empresa, so.area, so.oficina, ss.nombre_sede",
+            'fields'    => "smp.id_sg_personal, so.id_sg_oficina, CONCAT(nombres_personal, ' ', apellidos_personal) as empleado, se.nombre_empresa, so.area, so.oficina, ss.nombre_sede",
             'table'     => "sg_personal_oficinas spo JOIN sg_mi_personal smp ON spo.id_sg_personal = smp.`id_sg_personal` JOIN sg_oficinas so ON spo.id_sg_oficina = so.`id_sg_oficina` JOIN sg_sedes ss ON smp.id_sg_sede = ss.id_sg_sede JOIN sg_empresas se ON smp.id_sg_empresa = se.id_sg_empresa",
             'arguments' => "so.id_sg_oficina = '". $this->formData['id_oficina'] ."'"
         ])->records()->resultToArray();
@@ -136,6 +136,23 @@ class ModelOficinas
             'status'        => true,
             'rows'          => $resultSet,
             'integrantes'   => $integrantes
+        ];
+    }
+
+    public function ResumenEmpleadosOficina()
+    {
+        $integrantes = Database::query([
+            'fields'    => "smp.cedula_personal, concat(smp.nombres_personal, ' ', smp.apellidos_personal) as empleado, (SELECT nombre_torre FROM sg_torres WHERE id_sg_torre = so.id_sg_torre) as torre, ss.nombre_sede, so.piso_nivel, so.oficina, so.area",
+            'table'     => "sg_personal_oficinas spo JOIN sg_mi_personal smp ON spo.id_sg_personal = smp.id_sg_personal JOIN sg_oficinas so ON spo.id_sg_oficina = so.id_sg_oficina JOIN sg_sedes ss ON smp.id_sg_sede = ss.id_sg_sede JOIN sg_empresas se ON smp.id_sg_empresa = se.id_sg_empresa",
+            'arguments' => "se.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['idUser']) ."'"
+        ])->records()->resultToArray();
+
+        if(isset($integrantes[0]['empty']) && $integrantes[0]['empty'] == true)
+            $integrantes = [];
+        
+        return [
+            'status'        => true,
+            'rows'          => $integrantes
         ];
     }
 

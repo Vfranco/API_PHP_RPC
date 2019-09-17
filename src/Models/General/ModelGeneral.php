@@ -24,6 +24,22 @@ class ModelGeneral
 
     }
 
+    public static function getIdUnidadResidencialByUser($user)
+    {
+        $getIdUser = self::getIdUserByDecode($user);
+
+        $getId = Database::query([
+            'fields'    => "id_sg_unidad_residencial",
+            'table'     => "sg_unidad_residencial",
+            'arguments' => "id_sg_usuario = '". $getIdUser ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_unidad_residencial'];
+    }
+
     public static function getIdUserByDecode($user)
     {
         $decodeUser = base64_decode($user);

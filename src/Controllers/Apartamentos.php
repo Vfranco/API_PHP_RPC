@@ -26,7 +26,14 @@ class Apartamentos
         ActionFilters::Get();
         $obj = new ModelApartamentos(Request::phpInput());
         Response::status(200)->json($obj->ReadById());
-    }        
+    }
+
+    static function ReadByIdApto()
+    {
+        ActionFilters::Get();
+        $obj = new ModelApartamentos(Request::phpInput());
+        Response::status(200)->json($obj->ReadByIdApto());
+    }
 
     static function ReadByName()
     {
@@ -45,14 +52,14 @@ class Apartamentos
     static function Disable()
     {
         ActionFilters::Get();
-        $obj = new ModelEmpleados(Request::phpInput());
+        $obj = new ModelApartamentos(Request::phpInput());
         Response::status(200)->json($obj->Disable());
     }   
 
     static function Delete()
     {
         ActionFilters::Get();
-        $obj = new ModelEmpleados(Request::phpInput());
+        $obj = new ModelApartamentos(Request::phpInput());
         Response::status(200)->json($obj->Delete());
     }
 }
