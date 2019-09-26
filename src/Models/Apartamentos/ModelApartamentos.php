@@ -52,9 +52,9 @@ class ModelApartamentos
     public function ReadById()
     {
         $resultSet = Database::query([
-            'fields'    => "*",
-            'table'     => "sg_apartamentos",
-            'arguments' => "creado_por = '". $this->formData['uid'] ."' ORDER BY id_sg_apto DESC"
+            'fields'    => "sa.id_sg_apto, st.nombre_torre, sa.piso_apto, sa.numero_apto, sa.fecha_creacion, sa.id_sg_estado",
+            'table'     => "sg_apartamentos sa JOIN sg_torres st ON sa.id_sg_torre = st.id_sg_torre",
+            'arguments' => "sa.creado_por = '". $this->formData['uid'] ."' ORDER BY id_sg_apto DESC"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -74,12 +74,22 @@ class ModelApartamentos
             'arguments' => "sa.id_sg_apto = '". $this->formData['id'] ."'"
         ])->records()->resultToArray();
 
+        $integrantes = Database::query([
+            'fields'    => "sra.id_sg_residente, concat(sr.nombres_residente, ' ', sr.apellidos_residente) as residente, st.nombre_torre, sa.numero_apto, sa.piso_apto",
+            'table'     => "sg_residentes_apartamento sra JOIN sg_residentes sr ON sra.id_sg_residente = sr.id_sg_residente JOIN sg_torres st ON sra.id_sg_torre = st.id_sg_torre JOIN sg_apartamentos sa ON sra.id_sg_apto = sa.id_sg_apto",
+            'arguments' => "sa.id_sg_apto = '".$this->formData['id']."'"
+        ])->records()->resultToArray();
+
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
             return ['status' => false, 'message' => 'No se encontraron registros'];
+
+        if(isset($integrantes[0]['empty']) && $integrantes[0]['empty'] == true)
+            $integrantes = [];
         
         return [
-            'status'    => true,
-            'rows'      => $resultSet
+            'status'        => true,
+            'rows'          => $resultSet,
+            'residentes'    => $integrantes
         ];
     }
 
@@ -122,7 +132,7 @@ class ModelApartamentos
             {
                 $aptoHasResidentes = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "sg_residentes",
+                    'table'      => "sg_residentes_apartamento",
                     'arguments'  => "id_sg_apto = '". $this->formData['id'] ."'"
                 ]);
 

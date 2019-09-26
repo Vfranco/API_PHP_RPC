@@ -7,6 +7,19 @@ use Core\{Validate, Token};
 
 class ModelGeneral
 {
+    public static function getTerminalIdByUserName($user)
+    {
+        $username = Database::query([
+            'fields'    => "id_sg_terminal_usuario",
+            'table'     => "sg_terminal_usuarios",
+            'arguments' => "usuario = '". $user ."'"
+        ])->records()->resultToArray();
+
+        if(!self::hasRows($username))
+            return [];
+
+        return $username[0]['id_sg_terminal_usuario'];
+    }
     public static function getIdEmpresaByUser($user)
     {
         $getIdUser = self::getIdUserByDecode($user);
@@ -260,6 +273,76 @@ class ModelGeneral
         return $getId[0]['cedula_personal'];
     }
 
+    public static function getIdPersonalByCedula($cedula)
+    {
+        $getId = Database::query([
+            'fields'    => "id_sg_personal",
+            'table'     => "sg_mi_personal",
+            'arguments' => "cedula_personal = '". Database::escapeSql($cedula) ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_personal'];
+    }
+
+    public static function getIdSedeByCedula($cedula)
+    {
+        $getId = Database::query([
+            'fields'    => "id_sg_sede",
+            'table'     => "sg_mi_personal",
+            'arguments' => "cedula_personal = '". Database::escapeSql($cedula) ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_sede'];
+    }
+
+    public static function getIdSedeByTerminal($terminal)
+    {
+        $getId = Database::query([
+            'fields'    => "id_sg_sede",
+            'table'     => "sg_terminales",
+            'arguments' => "id_sg_terminal = '". Database::escapeSql($terminal) ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_sede'];
+    }
+
+    public static function getNombreSedeById($id)
+    {
+        $getId = Database::query([
+            'fields'    => "nombre_sede",
+            'table'     => "sg_sedes",
+            'arguments' => "id_sg_sede = '". Database::escapeSql($id) ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['nombre_sede'];
+    }
+
+    public static function getNombresEmpleadoByCedula($cedula)
+    {
+        $getId = Database::query([
+            'fields'    => "concat(nombres_personal, ' ', apellidos_personal) as empleado",
+            'table'     => "sg_mi_personal",
+            'arguments' => "cedula_personal = '". Database::escapeSql($cedula) ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['empleado'];
+    }
+
     public function checkIfTokenExist($token)
     {
         $getToken = Database::query([
@@ -310,11 +393,12 @@ class ModelGeneral
         return $result;
     }
 
-    public function getArlList()
+    public function getArlList($correo)
     {
         $getArl = Database::query([
-            'fields'    => "id_cms_arl, nombre_arl, cms_estados_id_cms_estados as estado",
-            'table'     => "cms_arl",            
+            'fields'    => "id_sg_arl, nombre_arl, id_sg_estado as estado",
+            'table'     => "sg_arl",
+            'arguments' => "creado_por = '". $correo ."'"
         ])->records()->resultToArray();
 
         if(isset($getArl[0]['empty']) && $getArl[0]['empty'] == true)
@@ -336,7 +420,7 @@ class ModelGeneral
                 else
                 {
                     $result[] = [
-                        'idArl'        => (int) $getArl[$key]['id_cms_arl'],
+                        'idArl'        => (int) $getArl[$key]['id_sg_arl'],
                         'nombreArl'    => $getArl[$key]['nombre_arl']
                     ];
                 }
@@ -346,11 +430,12 @@ class ModelGeneral
         return $result;
     }
 
-    public function getEpsList()
+    public function getEpsList($correo)
     {
         $getEps = Database::query([
-            'fields'    => "id_cms_eps, nombre_eps, cms_estados_id_cms_estados as estado",
-            'table'     => "cms_eps",
+            'fields'    => "id_sg_eps, nombre_eps, id_sg_estado as estado",
+            'table'     => "sg_eps",
+            'arguments' => "creado_por = '". $correo ."'"
         ])->records()->resultToArray();
 
         if(isset($getEps[0]['empty']) && $getEps[0]['empty'] == true)
@@ -372,8 +457,45 @@ class ModelGeneral
                 else
                 {
                     $result[] = [
-                        'idEps'        => (int) $getEps[$key]['id_cms_eps'],
+                        'idEps'        => (int) $getEps[$key]['id_sg_eps'],
                         'nombreEps'    => $getEps[$key]['nombre_eps']
+                    ];
+                }                
+            }            
+        }
+
+        return $result;
+    }
+
+    public function getMotivoList($correo)
+    {
+        $getEps = Database::query([
+            'fields'    => "id_sg_motivo, nombre_motivo, id_sg_estado as estado",
+            'table'     => "sg_motivos",
+            'arguments' => "creado_por = '". $correo ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getEps[0]['empty']) && $getEps[0]['empty'] == true)
+            return [];
+
+        $result = [];
+
+        foreach($getEps as $key => $value)
+        {
+            if($getEps[$key]['estado'] != _ID_ESTADO_INACTIVO)
+            {
+                if($getEps[$key]['nombre_motivo'] === _OTRA_ACTIVIDAD)
+                {
+                    $result[] = [
+                        'idMotivo'        => 1000,
+                        'nombreMotivo'    => $getEps[$key]['nombre_motivo']
+                    ];
+                }
+                else
+                {
+                    $result[] = [
+                        'idMotivo'        => (int) $getEps[$key]['id_sg_motivo'],
+                        'nombreMotivo'    => $getEps[$key]['nombre_motivo']
                     ];
                 }
                 
@@ -414,7 +536,15 @@ class ModelGeneral
     {        
         $record = Database::query($args)->records()->resultToArray();
 
-        if(isset($record[0]['empty']) && $record[0]['empty'])
+        if(isset($record[0]['empty']) && $record[0]['empty'] == true)
+            return false;
+
+        return true;
+    }
+
+    public static function hasRows($resource)
+    {
+        if(isset($resource[0]['empty']) && $resource[0]['empty'] == true)
             return false;
 
         return true;

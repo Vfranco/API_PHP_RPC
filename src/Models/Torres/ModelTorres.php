@@ -178,8 +178,17 @@ class ModelTorres
                     'arguments'  => "id_sg_torre = '". $this->formData['idTorre'] ."'"
                 ]);
 
+                $towerHasAptos = ModelGeneral::recordExist([
+                    'fields'     => "*",
+                    'table'      => "sg_apartamentos",
+                    'arguments'  => "id_sg_torre = '". $this->formData['idTorre'] ."'"
+                ]);
+
                 if($towerHasOffices)
                     return ['status' => false, 'message' => "Al parecer, tienes oficinas registradas con esta torre"];
+
+                if($towerHasAptos)
+                    return ['status' => false, 'message' => "Al parecer, tienes apartamentos registradas con esta torre"];
 
                 $deleteTorre = Database::delete([
                     'table'     => "sg_torres",                    

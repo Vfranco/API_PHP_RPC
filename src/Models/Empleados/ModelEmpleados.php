@@ -9,10 +9,12 @@ use Models\General\ModelGeneral;
 class ModelEmpleados
 {
     private $formData;
+    private $modelGeneral;
     
     public function __construct($formData)
     {
         $this->formData = $formData;
+        $this->modelGeneral = new ModelGeneral();
         return $this;
     }
 
@@ -24,19 +26,30 @@ class ModelEmpleados
                 return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
+                $empleadoExist = ModelGeneral::recordExist([
+                    'fields'    => "*",
+                    'table'     => "sg_mi_personal",
+                    'arguments' => "cedula_personal = '". $this->formData['cedula'] ."' AND id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']) ."'"
+                ]);
+
+                if($empleadoExist)
+                    return ['status' => false, 'message' => 'El empleado ya se encuentra registrado', 'error' => 'duplicate cedula'];
+
                 $saveEmpleado = Database::insert([
                     'table'     => 'sg_mi_personal',
                     'values'    => [
                         "id_sg_empresa"         => ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']),
                         "id_sg_sede"            => $this->formData['sede'],
                         "id_sg_estado"          => 1,
+                        "id_sg_arl"             => $this->formData['arl'],
+                        "id_sg_eps"             => $this->formData['eps'],
                         "cedula_personal"       => $this->formData['cedula'],
                         "nombres_personal"	    => $this->formData['nombres'],
                         "apellidos_personal"	=> $this->formData['apellidos'],
                         "direccion_personal"    => $this->formData['direccion'],
                         "telfono_personal"      => $this->formData['telefono'],
                         "correo_personal"       => $this->formData['email'],
-                        "photo_personal"        => '0',
+                        "photo_personal"        => (!isset($this->formData['photo'])) ? '0' : $this->modelGeneral->uploadImage($this->formData['photo']),
                         "fecha_registro"        => Database::dateTime(),
                         "creado_por"            => $this->formData['idEmpresa']
                     ],
@@ -79,7 +92,7 @@ class ModelEmpleados
     public function ReadById()
     {
         $resultSet = Database::query([
-            'fields'    => "se.`id_sg_personal`, se.cedula_personal, se.`nombres_personal`,	se.`apellidos_personal`, se.`direccion_personal`, se.`telefono_personal`, se.`correo_personal`, se.`id_sg_estado`, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = se.id_sg_sede) AS nombre_sede, CONCAT(se.`nombres_personal`, ' ', se.`apellidos_personal`) AS empleado, se.id_sg_sede",
+            'fields'    => "se.`id_sg_personal`, se.cedula_personal, se.`nombres_personal`,	se.`apellidos_personal`, se.`direccion_personal`, se.`telefono_personal`, se.`correo_personal`, se.`id_sg_estado`, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = se.id_sg_sede) AS nombre_sede, CONCAT(se.`nombres_personal`, ' ', se.`apellidos_personal`) AS empleado, se.id_sg_sede, se.photo_personal",
             'table'     => "sg_mi_personal se",
             'arguments' => "se.id_sg_personal = '". $this->formData['id_cms_empleado'] ."'"
         ])->records()->resultToArray();
@@ -155,7 +168,7 @@ class ModelEmpleados
                 $updateEmpleado = Database::update([
                     'table'     => "sg_mi_personal",
                     'fields'    => [                        
-                        "id_sg_sede"            => $this->formData['sede'],                        
+                        "id_sg_sede"            => $this->formData['sede'],
                         "cedula_personal"       => $this->formData['cedula'],
                         "nombres_personal"	    => $this->formData['nombres'],
                         "apellidos_personal"	=> $this->formData['apellidos'],

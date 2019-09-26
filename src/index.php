@@ -16,11 +16,17 @@ include 'Config/Enviroment.php';
 include 'Config/Globals.php';
 
 /**
+ * vendor autoload
+ */
+
+require '../vendor/autoload.php';
+
+/**
  * Autoload Class API
  */
 
 include 'autoload.php';
-
+ 
 /**
  * API Core
  */

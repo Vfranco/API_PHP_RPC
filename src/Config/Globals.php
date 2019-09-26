@@ -15,7 +15,7 @@ define('CMS_VERSION',   '1.0');
 /**
  * BASE_URL - Local
  */
-define('BASE_URL', 'http://api.sigga.com/');
+define('BASE_URL', 'http://api.sigga.com.co/');
 
 /**
  * BASE_URL - Server
@@ -88,6 +88,7 @@ define('_ERROR_BODY_BAD_FORMED', 'Cuerpo mal formado, por favor verifica que el 
 define('_ERROR_USER_BLOCK', 'La empresa se encuentra bloqueada.');
 define('_ERROR_USER_NOT_EXIST', 'El usuario no se encuentra activo en el sistema.');
 define('_ERROR_CLIENTE_SIN_TRAMITE', 'El número de documento no tiene tramite activo en el sistema.');
+define('_ERROR_NO_REGISTRA_SALIDA', '0000-00-00 00:00:00');
 
 
 /**

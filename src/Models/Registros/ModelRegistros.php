@@ -124,8 +124,8 @@ class ModelRegistros extends ModelGeneral
         if(isset($this->formData['id_cms_empresa']))
         {
             $visitas = Database::query([
-                'fields'    => "smp.cedula_personal, smp.nombres_personal, smp.apellidos_personal, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = smp.id_sg_sede) as nombre_sede, srmp.fecha_ingreso, srmp.fecha_salida",
-                'table'     => "sg_registros_mi_personal srmp JOIN sg_mi_personal smp ON srmp.`id_sg_personal` = smp.`id_sg_personal`",
+                'fields'    => "smp.cedula_personal, smp.nombres_personal, smp.apellidos_personal, (SELECT nombre_sede FROM sg_sedes WHERE id_sg_sede = smp.id_sg_sede) as nombre_sede, (SELECT nombre_sede	FROM sg_sedes WHERE	id_sg_sede = srmp.id_sg_sede_visitada) as sede_visitada, srmp.fecha_ingreso, srmp.fecha_salida, sa.nombre_arl, se.nombre_eps",
+                'table'     => "sg_registros_mi_personal srmp JOIN sg_mi_personal smp ON srmp.`id_sg_personal` = smp.`id_sg_personal` JOIN sg_arl sa ON smp.id_sg_arl = sa.id_sg_arl JOIN sg_eps se ON smp.id_sg_eps = se.id_sg_eps",
                 'arguments' => "srmp.id_sg_empresa = '". ModelGeneral::getIdEmpresaByUser($this->formData['id_cms_empresa']) ."' ORDER BY srmp.id_sg_registro DESC"
             ])->records()->resultToArray();
         }

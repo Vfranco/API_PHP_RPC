@@ -28,6 +28,27 @@ class Residentes
         Response::status(200)->json($obj->ReadById());
     }
 
+    static function ReadResidenteDetalles()
+    {
+        ActionFilters::Get();
+        $obj = new ModelResidente(Request::phpInput());
+        Response::status(200)->json($obj->ReadResidenteDetalles());
+    }
+
+    static function Asigna()
+    {
+        ActionFilters::Get();
+        $obj = new ModelResidente(Request::phpInput());
+        Response::status(200)->json($obj->Asigna());
+    }
+
+    static function DesAsignar()
+    {
+        ActionFilters::Get();
+        $obj = new ModelResidente(Request::phpInput());
+        Response::status(200)->json($obj->DesAsignar());
+    }
+
     static function Update()
     {
         ActionFilters::Get();
