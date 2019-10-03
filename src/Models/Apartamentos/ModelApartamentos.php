@@ -64,7 +64,34 @@ class ModelApartamentos
             'status'    => true,
             'rows'      => $resultSet
         ];
-    }    
+    }
+    
+    public static function ReadByOwner($owner)
+    {
+        $resultSet = Database::query([
+            'fields'    => "id_sg_apto, numero_apto, CASE WHEN id_sg_estado = 4 THEN 'Arrendado' WHEN id_sg_estado = 5 THEN 'Desocupado' END AS estado",
+            'table'     => "sg_apartamentos",
+            'arguments' => "creado_por = '". $owner ."' ORDER BY id_sg_apto DESC"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'rows' => []];
+
+        $records = [];
+
+        foreach($resultSet as $i => $item)
+        {
+            $data = [
+                'id_sg_apto'    => (int) $item['id_sg_apto'],
+                'numero_apto'   => $item['numero_apto'],
+                'estado'        => $item['estado']
+            ];
+
+            array_push($records, $data);
+        }
+        
+        return $records;
+    }
 
     public function ReadByIdApto()
     {

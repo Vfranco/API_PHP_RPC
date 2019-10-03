@@ -105,7 +105,33 @@ class ModelTorres
             'status'    => true,
             'rows'      => $resultSet
         ];
-    }    
+    }
+
+    public static function ReadByIdEmpresa($idEmpresa)
+    {
+        $resultSet = Database::query([
+            'fields'    => "id_sg_torre, nombre_torre",
+            'table'     => "sg_torres",
+            'arguments' => "id_sg_empresa = '". $idEmpresa ."' ORDER BY fecha_registro DESC"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'rows' => []];
+
+        $records = [];
+
+        foreach($resultSet as $i => $item)
+        {
+            $data = [
+                'id_sg_torre'   => (int) $item['id_sg_torre'],
+                'nombre_torre'  => $item['nombre_torre']
+            ];
+
+            array_push($records, $data);
+        }
+        
+        return $records;
+    }
 
     public function ReadByIdOficina()
     {

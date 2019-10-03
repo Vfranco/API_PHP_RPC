@@ -4,14 +4,20 @@ namespace Models\Terminal;
 
 use Database\Database;
 use Core\{Validate};
+use Models\Apartamentos\ModelApartamentos;
 use Models\General\ModelGeneral;
 use Models\Empleados\ModelEmpleados;
+use Models\Oficinas\ModelOficinas;
+use Models\Torres\ModelTorres;
 
 class ModelTerminal
 {
     private $formData;
     private $modelGeneral;
     
+    /**
+     * 
+     */
     public function __construct($formData)
     {
         $this->formData = $formData;
@@ -19,6 +25,9 @@ class ModelTerminal
         return $this;
     }
 
+    /**
+     * 
+     */
     public function Authentication()
     {
         try {
@@ -27,6 +36,15 @@ class ModelTerminal
                 return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
+                $terminalExist = ModelGeneral::recordExist([
+                    'fields'     => "usuario, password",
+                    'table'      => "sg_terminal_usuarios",
+                    'arguments'  => "usuario = '". Database::escapeSql($this->formData['usuario']) ."' AND password = '". (Database::escapeSql($this->formData['password'])) ."'"
+                ]);
+
+                if(!$terminalExist)
+                    return ['status' => false, 'message' => 'Usuario y/o Contraseña Incorrectas', 'error' => 'Terminal no registrada'];
+
                 $hasActiveSession = Database::query([
                     'fields'    => "*",
                     'table'     => "sg_terminales_conectadas",
@@ -39,7 +57,7 @@ class ModelTerminal
                 $terminalExist = ModelGeneral::recordExist([
                     'fields'     => "usuario, password",
                     'table'      => "sg_terminal_usuarios",
-                    'arguments'  => "usuario = '". Database::escapeSql($this->formData['usuario']) ."' AND '". Database::escapeSql($this->formData['password']) ."'"
+                    'arguments'  => "usuario = '". Database::escapeSql($this->formData['usuario']) ."' AND password = '". Database::escapeSql($this->formData['password']) ."'"
                 ]);
 
                 if(!$terminalExist)
@@ -48,19 +66,13 @@ class ModelTerminal
                 $userTerminal = ModelGeneral::getTerminalIdByUserName($this->formData['usuario']);
 
                 $userDataSession = Database::query([
-                    'fields'    => "stu.id_sg_terminal_usuario, se.nombre_empresa, ss.nombre_sede, se.id_sg_empresa, ss.id_sg_sede, stu.creado_por, stu.id_sg_estado, stu.creado_por",
-                    'table'     => "sg_terminal_usuarios stu JOIN sg_empresas se ON stu.id_sg_empresa = se.id_sg_empresa JOIN sg_sedes ss ON se.id_sg_empresa = ss.id_sg_empresa",
-                    'arguments' => "id_sg_terminal_usuario = '". $userTerminal ."' LIMIT 1"
+                    'fields'    => "stu.id_sg_terminal_usuario, se.nombre_empresa, ss.nombre_sede, se.id_sg_empresa, ss.id_sg_sede, stu.creado_por, stu.id_sg_estado, stu.creado_por, stu.id_sg_tipo_registro, stu.formulario, stu.id_sg_tipo_control",
+                    'table'     => "sg_terminales stu JOIN sg_empresas se ON stu.id_sg_empresa = se.id_sg_empresa JOIN sg_sedes ss ON stu.id_sg_sede = ss.id_sg_sede",
+                    'arguments' => "se.id_sg_empresa = '". ModelGeneral::getIdEmpresaByTerminal($userTerminal) ."'"
                 ])->records()->resultToArray();
 
                 if($userDataSession[0]['id_sg_estado'] != 1)
                     return ['status' => false, 'message' => 'La terminal se encuentra fuera de servicio', 'error' => 'Terminal Inactiva'];
-
-                $formData = Database::query([
-                    'fields'    => "*",
-                    'table'     => "sg_terminales",
-                    'arguments' => "id_sg_terminal_usuario = '". $userTerminal ."'"
-                ])->records()->resultToArray();
 
                 Database::insert([
                     'table'     => "sg_terminales_conectadas",
@@ -74,6 +86,105 @@ class ModelTerminal
 
                 if(ModelGeneral::hasRows($userDataSession))
                 {
+                    foreach($userDataSession as $item => $value)
+                    {
+                        switch($value['id_sg_tipo_registro'])
+                        {
+                            case 1:
+
+                                if($value['id_sg_estado'] == 1)
+                                {
+                                    $formPersonal = [
+                                        ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                            'status'    => true,
+                                            'form'      => $value['formulario'],
+                                            'arl'       => $this->modelGeneral->getArlList($value['creado_por']),
+                                            'eps'       => $this->modelGeneral->getEpsList($value['creado_por']),
+                                            'motivos'   => $this->modelGeneral->getMotivoList($value['creado_por']),
+                                            'sede'      => (int) $value['id_sg_sede']
+                                        ]
+                                    ];
+                                }
+                                else
+                                {
+                                    $formPersonal = [
+                                        ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                            'status'    => false,
+                                            'form'      => ''
+                                        ]
+                                    ];
+                                }
+                            
+                            break;
+
+                            case 2:
+
+                                if($value['id_sg_estado'] == 1)
+                                {
+                                    if($value['id_sg_tipo_control'] == 1)
+                                    {
+                                        $formVisitantes = [
+                                            ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                                'status'    => true,
+                                                'form'      => $value['formulario'],
+                                                'torres'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),
+                                                'aptos'     => ModelApartamentos::ReadByOwner($value['creado_por']),
+                                                'sede'      => (int)$value['id_sg_sede']
+                                            ]
+                                        ];
+                                    }
+                                    else
+                                    {
+                                        $formVisitantes = [
+                                            ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                                'status'    => true,
+                                                'form'      => $value['formulario'],
+                                                'torres'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),
+                                                'oficinas'  => ModelOficinas::ReadByOwner($value['creado_por']),
+                                                'sede'      => (int)$value['id_sg_sede']
+                                            ]
+                                        ];
+                                    }                               
+                                }
+                                else
+                                {
+                                    $formVisitantes = [
+                                        ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                            'status'    => false,
+                                            'form'      => ''
+                                        ]
+                                    ];
+                                }
+                            break;
+
+                            case 3:
+
+                                if($value['id_sg_estado'] == 1)
+                                {
+                                    $formContratistas = [
+                                        ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                            'status'    => true,
+                                            'form'      => $value['formulario'],
+                                            'arl'       => $this->modelGeneral->getArlList($value['creado_por']),
+                                            'eps'       => $this->modelGeneral->getEpsList($value['creado_por']),
+                                            'sede'      => (int)$value['id_sg_sede']
+                                        ]
+                                    ];
+                                }
+                                else 
+                                {
+                                    $formContratistas = [
+                                        ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                            'status'    => false,
+                                            'form'      => ''
+                                        ]
+                                    ];
+                                }
+                                
+                            break;
+                        }
+                    }
+                    
                     return [
                         'status'    => true,
                         'empresa'   => [
@@ -84,21 +195,9 @@ class ModelTerminal
                             'uid'       => $userDataSession[0]['creado_por']
                         ],
                         'forms'     => [
-                            'personal'      => [
-                                'status'    => true,
-                                'form'      => $formData[0]['formulario'],
-                                'arl'       => $this->modelGeneral->getArlList($userDataSession[0]['creado_por']),
-                                'eps'       => $this->modelGeneral->getEpsList($userDataSession[0]['creado_por']),
-                                'motivos'   => $this->modelGeneral->getMotivoList($userDataSession[0]['creado_por'])
-                            ],
-                            'visitantes'    => [
-                                'status'    => false,
-                                'form'      => ''
-                            ],
-                            'contratistas'  => [
-                                'status'    => false,
-                                'form'      => ''
-                            ]
+                            'personal'      => $formPersonal['personal'],
+                            'visitantes'    => $formVisitantes['visitantes'],
+                            'contratistas'  => $formContratistas['contratistas']
                         ]
                     ];
                 }                
@@ -109,6 +208,9 @@ class ModelTerminal
         }
     }
 
+    /**
+     * 
+     */
     public function CreatePersonal()
     {
         try{
@@ -128,6 +230,9 @@ class ModelTerminal
         }        
     }
 
+    /**
+     * 
+     */
     public function RegistraActividad()
     {
         try{
@@ -178,18 +283,7 @@ class ModelTerminal
                     'fields'    => "*",
                     'table'     => "sg_registros_mi_personal",
                     'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND id_sg_empresa = '".ModelGeneral::getIdEmpresaByUser($this->formData['uid'])."' ORDER BY id_sg_registro DESC LIMIT 1"
-                ])->records()->resultToArray();
-
-                if(isset($this->formData['photo']))
-                {
-                    Database::update([
-                        'table'     => "sg_mi_personal",
-                        'fields'    => [
-                            'photo_personal' => $this->modelGeneral->uploadImage($this->formData['photo'])
-                        ],
-                        'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
-                    ])->updateRow();
-                }
+                ])->records()->resultToArray();                
 
                 if(ModelGeneral::hasRows($hasRecord))
                 {
@@ -257,6 +351,9 @@ class ModelTerminal
         }
     }
 
+    /**
+     * 
+     */
     public function Logout()
     {
         $terminalExist = ModelGeneral::recordExist([
@@ -275,5 +372,159 @@ class ModelTerminal
 
         if($logout)
             return ['status' => true, 'message' => 'Cierre de session exitoso'];
+    }
+
+    /**
+     * 
+     */
+    public function UploadPhoto()
+    {
+        if(!isset($this->formData['photo']))
+            return ['status' => false, 'message' => 'Photo is not defined'];
+        else
+        {
+            $updateRecord = Database::update([
+                'table'     => "sg_mi_personal",
+                'fields'    => [
+                    'photo_personal' => $this->modelGeneral->uploadImage($this->formData['photo'])
+                ],
+                'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
+            ])->updateRow();
+
+            if($updateRecord)
+                return ['status' => true, 'message' => 'Photo Uploaded'];
+            else
+                return ['status' => false, 'message' => 'not uploaded'];
+        }
+    }
+
+    /**
+     * 
+     */
+    public function Reload()
+    {
+        $userDataSession = Database::query([
+            'fields'    => "stu.id_sg_terminal_usuario, se.nombre_empresa, ss.nombre_sede, se.id_sg_empresa, ss.id_sg_sede, stu.creado_por, stu.id_sg_estado, stu.creado_por, stu.id_sg_tipo_registro, stu.formulario, stu.id_sg_tipo_control",
+            'table'     => "sg_terminales stu JOIN sg_empresas se ON stu.id_sg_empresa = se.id_sg_empresa JOIN sg_sedes ss ON stu.id_sg_sede = ss.id_sg_sede",
+            'arguments' => "stu.creado_por = '". $this->formData['uid'] ."'"            
+        ])->records()->resultToArray();
+
+        if(ModelGeneral::hasRows($userDataSession))
+        {
+            foreach($userDataSession as $item => $value)
+            {
+                switch($value['id_sg_tipo_registro'])
+                {
+                    case 1:
+
+                        if($value['id_sg_estado'] == 1)
+                        {
+                            $formPersonal = [
+                                ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                    'status'    => true,
+                                    'form'      => $value['formulario'],
+                                    'arl'       => $this->modelGeneral->getArlList($value['creado_por']),
+                                    'eps'       => $this->modelGeneral->getEpsList($value['creado_por']),
+                                    'motivos'   => $this->modelGeneral->getMotivoList($value['creado_por']),
+                                    'sede'      => (int) $value['id_sg_sede']
+                                ]
+                            ];
+                        }
+                        else
+                        {
+                            $formPersonal = [
+                                ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                    'status'    => false,
+                                    'form'      => ''
+                                ]
+                            ];
+                        }
+                    
+                    break;
+
+                    case 2:
+
+                        if($value['id_sg_estado'] == 1)
+                        {
+                            if($value['id_sg_tipo_control'] == 1)
+                            {
+                                $formVisitantes = [
+                                    ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                        'status'    => true,
+                                        'form'      => $value['formulario'],
+                                        'torres'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),
+                                        'aptos'     => ModelApartamentos::ReadByOwner($value['creado_por']),
+                                        'sede'      => (int)$value['id_sg_sede']
+                                    ]
+                                ];
+                            }
+                            else
+                            {
+                                $formVisitantes = [
+                                    ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                        'status'    => true,
+                                        'form'      => $value['formulario'],
+                                        'torres'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),
+                                        'oficinas'  => ModelOficinas::ReadByOwner($value['creado_por']),
+                                        'sede'      => (int)$value['id_sg_sede']
+                                    ]
+                                ];
+                            }                               
+                        }
+                        else
+                        {
+                            $formVisitantes = [
+                                ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                    'status'    => false,
+                                    'form'      => ''
+                                ]
+                            ];
+                        }
+                    break;
+
+                    case 3:
+
+                        if($value['id_sg_estado'] == 1)
+                        {
+                            $formContratistas = [
+                                ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                    'status'    => true,
+                                    'form'      => $value['formulario'],
+                                    'arl'       => $this->modelGeneral->getArlList($value['creado_por']),
+                                    'eps'       => $this->modelGeneral->getEpsList($value['creado_por']),
+                                    'sede'      => (int)$value['id_sg_sede']
+                                ]
+                            ];
+                        }
+                        else 
+                        {
+                            $formContratistas = [
+                                ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
+                                    'status'    => false,
+                                    'form'      => ''
+                                ]
+                            ];
+                        }
+                        
+                    break;
+                }
+            }
+            
+            return [
+                'status'    => true,
+                'empresa'   => [
+                    'nombre'    => $userDataSession[0]['nombre_empresa'],
+                    'sede'      => $userDataSession[0]['nombre_sede'],
+                    'terminal'  => (int) $userDataSession[0]['id_sg_terminal_usuario'],
+                    'id_sede'   => (int) $userDataSession[0]['id_sg_sede'],
+                    'uid'       => $userDataSession[0]['creado_por']
+                ],
+                'forms'     => [
+                    'personal'      => $formPersonal['personal'],
+                    'visitantes'    => $formVisitantes['visitantes'],
+                    'contratistas'  => $formContratistas['contratistas']
+                ]
+            ];
+        }
     }
 }

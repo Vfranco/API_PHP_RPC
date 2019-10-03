@@ -20,6 +20,7 @@ class ModelGeneral
 
         return $username[0]['id_sg_terminal_usuario'];
     }
+
     public static function getIdEmpresaByUser($user)
     {
         $getIdUser = self::getIdUserByDecode($user);
@@ -34,7 +35,20 @@ class ModelGeneral
             return [];
 
         return $getId[0]['id_sg_empresa'];
+    }
 
+    public static function getIdEmpresaByTerminal($idterminal)
+    {
+        $getId = Database::query([
+            'fields'    => "id_sg_empresa",
+            'table'     => "sg_terminal_usuarios",
+            'arguments' => "id_sg_terminal_usuario = '". $idterminal ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_empresa'];
     }
 
     public static function getIdUnidadResidencialByUser($user)
@@ -548,5 +562,32 @@ class ModelGeneral
             return false;
 
         return true;
+    }
+
+    public static function setTipoRegistro($tipoRegistro)
+    {
+        $tipo = '';
+
+        if(!isset($tipoRegistro) || empty($tipoRegistro))
+            return 'no set tipo';
+        else
+        {
+            switch($tipoRegistro)
+            {
+                case 1:
+                    $tipo = 'personal';
+                break;
+
+                case 2:
+                    $tipo = 'visitantes';
+                break;
+
+                case 3:
+                    $tipo = 'contratistas';
+                break;
+            }
+        }
+
+        return $tipo;
     }
 }

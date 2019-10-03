@@ -44,4 +44,18 @@ class Terminal
         $obj = new ModelTerminal(Request::phpInput());
         Response::status(200)->json($obj->RegistraActividad());
     }
+
+    static function UploadPhoto()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->UploadPhoto());
+    }
+
+    static function Reload()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->Reload());
+    }
 }

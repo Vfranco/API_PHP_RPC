@@ -110,7 +110,35 @@ class ModelOficinas
             'status'    => true,
             'rows'      => $resultSet
         ];
-    }    
+    }
+
+    public static function ReadByOwner($owner)
+    {
+        $resultSet = Database::query([
+            'fields'    => "*",
+            'table'     => "sg_oficinas",
+            'arguments' => "creado_por = '". $owner ."' ORDER BY fecha_registro DESC"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'message' => []];
+        
+        $records = [];
+
+        foreach($resultSet as $i => $item)
+        {
+            $data = [
+                'id_sg_oficina' => (int) $item['id_sg_oficina'],
+                'oficina'       => $item['oficina'],
+                'area'          => $item['area'],
+                'estado'        => ($item['id_sg_estado'] == 1) ? 'Activa' : 'Inactiva'
+            ];
+
+            array_push($records, $data);
+        }
+
+        return $records;
+    }
 
     public function ReadByIdOficina()
     {
