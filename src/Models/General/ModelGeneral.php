@@ -556,6 +556,20 @@ class ModelGeneral
         return true;
     }
 
+    public static function getIdVisitanteByCedula($cedula)
+    {
+        $getData = Database::query([
+            'fields'    => "id_sg_visitante",
+            'table'     => "sg_mis_visitantes",
+            'arguments' => "cedula = '". $cedula ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getData[0]['empty']) && $getData[0]['empty'] == true)
+            return [];
+
+        return $getData[0]['id_sg_visitante'];
+    }
+
     public static function hasRows($resource)
     {
         if(isset($resource[0]['empty']) && $resource[0]['empty'] == true)

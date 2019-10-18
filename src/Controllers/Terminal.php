@@ -38,11 +38,39 @@ class Terminal
         Response::status(200)->json($obj->CreatePersonal());
     }
 
+    static function CreateVisitante()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CreateVisitante());
+    }
+
     static function RegistraActividad()
     {
         ActionFilters::Get();
         $obj = new ModelTerminal(Request::phpInput());
         Response::status(200)->json($obj->RegistraActividad());
+    }
+
+    static function checkVisitante()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->checkVisitante());
+    }
+
+    static function RegistraVisitaResidencial()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->RegistraVisitaResidencial());
+    }
+
+    static function RegistraSalidaVisitante()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->RegistraSalidaVisitante());
     }
 
     static function UploadPhoto()

@@ -4,6 +4,7 @@ namespace Models\Torres;
 
 use Database\Database;
 use Core\{Validate};
+use Models\Apartamentos\ModelApartamentos;
 use Models\General\ModelGeneral;
 
 class ModelTorres
@@ -110,7 +111,7 @@ class ModelTorres
     public static function ReadByIdEmpresa($idEmpresa)
     {
         $resultSet = Database::query([
-            'fields'    => "id_sg_torre, nombre_torre",
+            'fields'    => "id_sg_torre, nombre_torre, creado_por",
             'table'     => "sg_torres",
             'arguments' => "id_sg_empresa = '". $idEmpresa ."' ORDER BY fecha_registro DESC"
         ])->records()->resultToArray();
@@ -124,7 +125,8 @@ class ModelTorres
         {
             $data = [
                 'id_sg_torre'   => (int) $item['id_sg_torre'],
-                'nombre_torre'  => $item['nombre_torre']
+                'nombre_torre'  => $item['nombre_torre'],
+                'aptos'         => ModelApartamentos::ReadByOwner($item['id_sg_torre'])
             ];
 
             array_push($records, $data);
