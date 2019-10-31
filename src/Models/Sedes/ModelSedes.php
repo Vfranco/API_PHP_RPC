@@ -71,15 +71,27 @@ class ModelSedes
         $resultSet = Database::query([
             'fields'    => "*",
             'table'     => "sg_sedes",
-            'arguments' => "id_sg_sede = '". $this->formData['id_cms_sede'] ."'"
+            'arguments' => "creado_por = '". $this->formData['uid'] ."'"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
             return ['status' => false, 'message' => 'No se encontraron datos'];
         
+        $elements = [];
+
+        foreach($resultSet as $i => $item)
+        {
+            $data = [
+                'id'    => $item['id_sg_sede'],
+                'prop'  => $item['nombre_sede']
+            ];
+
+            array_push($elements, $data);
+        }
+
         return [
             'status'    => true,
-            'rows'      => $resultSet
+            'combo'     => $elements
         ];
     }
 

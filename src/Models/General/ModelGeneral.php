@@ -7,6 +7,20 @@ use Core\{Validate, Token};
 
 class ModelGeneral
 {
+    public function getTipoControlByUser($user)
+    {
+        $tipo = Database::query([
+            'fields'    => "id_sg_tipo_control",
+            'table'     => "sg_registros",
+            'arguments' => "correo = '". base64_decode($user) ."'"
+        ])->records()->resultToArray();
+
+        if(!self::hasRows($tipo))
+            return [];
+
+        return $tipo[0]['id_sg_tipo_control'];
+    }
+
     public static function getTerminalIdByUserName($user)
     {
         $username = Database::query([

@@ -33,11 +33,14 @@ class Validate
         
         foreach($data as $key => $value)
         {
-            if(empty($value))
+            if(gettype($value) == 'string')
             {
-                $status = true;
-                break;
-            }            
+                if(empty($value))
+                {
+                    $status = true;
+                    break;
+                }
+            }
         }
         
         return $status;

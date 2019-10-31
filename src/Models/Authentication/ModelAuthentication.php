@@ -4,6 +4,7 @@ namespace Models\Authentication;
 
 use Database\Database;
 use Core\{Validate, Token};
+use Exception;
 use Models\General\ModelGeneral;
 use Models\Empresas\ModelEmpresas;
 
@@ -33,10 +34,10 @@ class ModelAuthentication extends ModelGeneral
     {
         $deleteRow = Database::delete([
             'table'     => "cms_log_user_online",
-            'arguments' => "cms_acl_user_id_acl_user = '". Database::escapeSql($this->formData['idAclUser']) ."'"
+            'arguments' => "cms_acl_user_id_acl_user = '" . Database::escapeSql($this->formData['idAclUser']) . "'"
         ])->deleteRow();
 
-        if($deleteRow)
+        if ($deleteRow)
             return ['status' => true, 'message' => 'Se ha cerrado la sesion'];
         else
             return ['status' => false, 'message' => 'Ha ocurrido un error'];
@@ -44,33 +45,35 @@ class ModelAuthentication extends ModelGeneral
 
     public function cmsLogin()
     {
-        $this->aclUser = $this->formData['userAcl'];
-        $this->aclPass = $this->formData['passAcl'];
+        try {
+            $this->aclUser = $this->formData['userAcl'];
+            $this->aclPass = $this->formData['passAcl'];
 
-        $this->checkIfActive($this->aclUser);
+            $this->checkIfActive($this->aclUser);
 
-        if($this->isSessionActive($this->getIdUserByEmail($this->aclUser)))
-            return ['status' => false, 'message' => 'Tienes un sesion Activa'];
-        else 
-        {
-            $auth = Database::query([
-                'fields'    => "*",
-                'table'     => "sg_usuarios",
-                'arguments' => "correo = '". Database::escapeSql($this->aclUser) ."' and password = '". Database::escapeSql($this->aclPass) ."' LIMIT 1"
-            ])->records()->resultToArray();
-    
-            if(isset($auth[0]['empty']) && $auth[0]['empty'] == true)
-                return ['status' => false, 'message' => _MSGBOX_ERROR_AUTHENTICATION];
-            else
-            {
-                return [
-                    'status'    => true,
-                    'message'   => 'Sesion iniciada'
-                ];
-            }   
+            if ($this->isSessionActive($this->getIdUserByEmail($this->aclUser)))
+                return ['status' => false, 'message' => 'Tienes un sesion Activa'];
+            else {
+                $auth = Database::query([
+                    'fields'    => "*",
+                    'table'     => "sg_usuarios",
+                    'arguments' => "correo = '" . Database::escapeSql($this->aclUser) . "' and password = '" . Database::escapeSql($this->aclPass) . "' LIMIT 1"
+                ])->records()->resultToArray();
+
+                if (isset($auth[0]['empty']) && $auth[0]['empty'] == true)
+                    return ['status' => false, 'message' => _MSGBOX_ERROR_AUTHENTICATION];
+                else {
+                    return [
+                        'status'    => true,
+                        'message'   => 'Sesion iniciada'
+                    ];
+                }
+            }
+        } catch (Exception $e) {
+            error_log(print_r($e->getMessage(), true));
         }
     }
-    
+
     private function processLogin($formData)
     {
         $this->aclUser = $formData['userAcl'];
@@ -78,24 +81,21 @@ class ModelAuthentication extends ModelGeneral
 
         $this->checkIfActive($this->aclUser);
 
-        if($this->isSessionActive($this->getIdUserByEmail($this->aclUser)))
+        if ($this->isSessionActive($this->getIdUserByEmail($this->aclUser)))
             return ['status' => false, 'message' => 'Tienes un sesion Activa'];
-        else
-        {
+        else {
             $auth = Database::query([
                 'fields'    => "cu.id_acl_user as idAclUser, CONCAT(cu.fname_acl_user, ' ', cu.lname_acl_user) as fullname, ce.id_cms_empresas as idCmsEmpresa, ce.nombre_empresa as nombreEmpresa, cs.id_cms_sede as idSede, cs.nombre_sede as nombreSede",
                 'table'     => "cms_acl_user cu join cms_empresas ce on cu.cms_empresas_id_cms_empresas = ce.id_cms_empresas join cms_sedes cs on cs.cms_empresas_id_cms_empresas = ce.id_cms_empresas",
-                'arguments' => "cu.email_acl_user = '". Database::escapeSql($this->aclUser) ."' and cu.password_acl_user = '". Database::escapeSql($this->aclPass) ."' limit 1"            
+                'arguments' => "cu.email_acl_user = '" . Database::escapeSql($this->aclUser) . "' and cu.password_acl_user = '" . Database::escapeSql($this->aclPass) . "' limit 1"
             ])->records()->resultToArray();
-    
-            if(isset($auth[0]['empty']) && $auth[0]['empty'] == true)
+
+            if (isset($auth[0]['empty']) && $auth[0]['empty'] == true)
                 return ['status' => false, 'message' => _MSGBOX_ERROR_AUTHENTICATION];
-            else
-            {
+            else {
                 $getDataUserLog = $this->saveLog($this->aclUser);
-    
-                if(count($getDataUserLog) > 0)
-                {
+
+                if (count($getDataUserLog) > 0) {
                     Database::insert([
                         'table'     => 'cms_log_user_online',
                         'values'    => [
@@ -108,9 +108,9 @@ class ModelAuthentication extends ModelGeneral
                         'autoinc'   => true
                     ])->affectedRow();
                 }
-                
+
                 return [
-                    'status'        => true, 
+                    'status'        => true,
                     'objUser'       => [
                         "idAclUser"     => (int) $auth[0]['idAclUser'],
                         "fullName"      => $auth[0]['fullname'],
@@ -123,7 +123,7 @@ class ModelAuthentication extends ModelGeneral
                         'Control_de_Personal'       => $this->getFormIdEmpresaSede($auth[0]['idCmsEmpresa'])[0],
                         'Control_de_Visitas'        => $this->getFormIdEmpresaSede($auth[0]['idCmsEmpresa'])[1],
                         'Control_de_Proveedores'    => $this->getFormIdEmpresaSede($auth[0]['idCmsEmpresa'])[2]
-                        
+
                     ],
                     'personal'      => $this->getPersonalRegistrado($auth[0]['idCmsEmpresa']),
                     'actividades'   => $this->getActividades($auth[0]['idCmsEmpresa']),
@@ -136,17 +136,17 @@ class ModelAuthentication extends ModelGeneral
                 ];
             }
         }
-    }    
+    }
 
     private function saveLog($user)
     {
         $getLogUser = Database::query([
             'fields'    => "cd.id_cms_dispositivo, cu.id_acl_user, cu.cms_estados_id_cms_estados, cd.random_key, cd.secret_key",
             'table'     => "cms_acl_user cu join cms_empresas ce on ce.id_acl_user_empresa_fk = cu.id_acl_user join cms_dispositivos cd on ce.id_cms_empresas = cd.cms_empresas_id_cms_empresas",
-            'arguments' => "cu.email_acl_user = '". Database::escapeSql($user) ."' LIMIT 1"            
+            'arguments' => "cu.email_acl_user = '" . Database::escapeSql($user) . "' LIMIT 1"
         ])->records()->resultToArray();
 
-        if(isset($getLogUser[0]['empty']) && $getLogUser[0]['empty'] == true)
+        if (isset($getLogUser[0]['empty']) && $getLogUser[0]['empty'] == true)
             return [];
 
         return [
@@ -163,24 +163,22 @@ class ModelAuthentication extends ModelGeneral
         $active = Database::query([
             'fields'    => "id_sg_estado",
             'table'     => "sg_usuarios",
-            'arguments' => "correo = '". Database::escapeSql($user) ."' LIMIT 1"
+            'arguments' => "correo = '" . Database::escapeSql($user) . "' LIMIT 1"
         ])->records()->resultToArray();
 
-        if(isset($active[0]['empty']) && $active[0]['empty'] == true)
+        if (isset($active[0]['empty']) && $active[0]['empty'] == true)
             return ['status' => false, 'message' => _MSGBOX_ERROR_AUTHENTICATION];
 
         $result = [];
 
-        foreach($active[0] as $key => $value)
-        {
-            if($value != 1)
-            {
+        foreach ($active[0] as $key => $value) {
+            if ($value != 1) {
                 $result = ['status' => false, 'message' => $key . " no se encuentra activo"];
                 break;
             }
         }
 
-        if(count($result) <= 0)
+        if (count($result) <= 0)
             return false;
         else
             exit(json_encode($result, JSON_PRETTY_PRINT));
@@ -191,13 +189,13 @@ class ModelAuthentication extends ModelGeneral
         $isActive = Database::query([
             'fields'    => "id_sg_usuario",
             'table'     => "sg_usuarios_en_linea",
-            'arguments' => "id_sg_usuario = '". Database::escapeSql($id) ."'"
+            'arguments' => "id_sg_usuario = '" . Database::escapeSql($id) . "'"
         ])->records()->resultToArray();
 
-        if(isset($isActive[0]['empty']) && $isActive[0]['empty'] == true)
+        if (isset($isActive[0]['empty']) && $isActive[0]['empty'] == true)
             return false;
 
-        if(count($isActive[0]) > 0)
+        if (count($isActive[0]) > 0)
             return true;
 
         return false;

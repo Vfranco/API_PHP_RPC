@@ -26,7 +26,7 @@ class ModelProveedores
             {
                 $proveedorExist = ModelGeneral::recordExist([
                     'fields'     => "*",
-                    'table'      => "cms_empresa_proveedores",
+                    'table'      => "sg_mis_proveedores",
                     'arguments'  => "nit_proveedor = '". $this->formData['nitProveedor'] ."'"
                 ]);
 
@@ -34,7 +34,7 @@ class ModelProveedores
                     return ['status' => false, 'message' => "Este Autorizado, se encuentra registrado"];
 
                 $saveProveedor = Database::insert([
-                    'table'     => 'cms_empresa_proveedores',
+                    'table'     => 'sg_mis_proveedores',
                     'values'    => [
                         "cms_empresas_id_cms_empresas"  => $this->formData['idEmpresa'],
                         "cms_estados_id_cms_estados"    => $this->formData['estado'],
@@ -61,7 +61,7 @@ class ModelProveedores
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_empresa_proveedores",
+            'table'     => "sg_mis_proveedores",
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -77,8 +77,8 @@ class ModelProveedores
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_empresa_proveedores",
-            'arguments' => "id_cms_empresa_proveedor = '". $this->formData['id_cms_empresa_proveedor'] ."'"
+            'table'     => "sg_mis_proveedores",
+            'arguments' => "creado_por = '". $this->formData['uid'] ."'"
         ])->records()->resultToArray();
 
         if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
@@ -94,7 +94,7 @@ class ModelProveedores
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_empresa_proveedores",
+            'table'     => "sg_mis_proveedores",
             'arguments' => "nit_proveedor = '". $this->formData['nitProveedor'] ."'"
         ])->records()->resultToArray();
 
@@ -111,7 +111,7 @@ class ModelProveedores
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "cms_empresa_proveedores",
+            'table'     => "sg_mis_proveedores",
             'arguments' => $this->formData['argument']            
         ])->records()->resultToArray();
 
@@ -133,7 +133,7 @@ class ModelProveedores
             else
             {
                 $updateProveedor = Database::update([
-                    'table'     => "cms_empresa_proveedores",
+                    'table'     => "sg_mis_proveedores",
                     'fields'    => [
                         "cms_empresas_id_cms_empresas"  => $this->formData['idEmpresa'],
                         "cms_estados_id_cms_estados"    => $this->formData['estado'],
@@ -162,7 +162,7 @@ class ModelProveedores
             else
             {
                 $disableProveedor = Database::update([
-                    'table'     => "cms_empresa_proveedores",
+                    'table'     => "sg_mis_proveedores",
                     'fields'    => [
                         'cms_empresas_id_cms_empresas'  => $this->formData['idEmpresa'],
                         'cms_estados_id_cms_estados'    => $this->formData['estado']

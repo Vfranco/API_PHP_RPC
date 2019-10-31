@@ -44,24 +44,42 @@ define('_REMOTE_ADDR_GENERAL', $_SERVER['REMOTE_ADDR']);
  * Menu por Defecto
  */
 define('MENU_DEFAULT', [
-    'Mi Personal'       => [
-        'href'      => '#!/empresas',
-        'icon'      => 'badge',
-        'color'     => 'primary',
-        'estado'    => 1
-    ],
-    'Mis Visitantes'    => [
-        'href'      => '#!/visitantes',
-        'icon'      => 'circle-08',
-        'color'     => 'misvisitantes',
-        'estado'    => 1
-    ],
-    'Mis Proveedores'   => [
-        'href'      => '#!/proveedores',
-        'icon'      => 'building',
-        'color'     => 'yellow',
-        'estado'    => 2
-    ]]
+        'Mi Personal'       => [
+            'href'      => '#!/empresas',
+            'icon'      => 'badge',
+            'color'     => 'primary',
+            'estado'    => 1,
+            'posicion'  => 1
+        ],
+        'Mis Visitantes'    => [
+            'href'      => '#!/visitantes',
+            'icon'      => 'circle-08',
+            'color'     => 'misvisitantes',
+            'estado'    => 1,
+            'posicion'  => 2
+        ],
+        'Mis Contratistas'   => [
+            'href'      => '#!/contratistas',
+            'icon'      => 'building',
+            'color'     => 'yellow',
+            'estado'    => 2,
+            'posicion'  => 3
+        ],
+        'Mis Terminales'    => [
+            'href'      => '#!/terminales',
+            'icon'      => 'tablet-button',
+            'color'     => '',
+            'estado'    => 1,
+            'posicion'  => 4
+        ],
+        'Mi Configuracion'  => [
+            'href'      => '#!/configuracion',
+            'icon'      => 'settings-gear-65',
+            'color'     => '',
+            'estado'    => 1,
+            'posicion'  => 5
+        ]
+    ]
 );
 
 /*

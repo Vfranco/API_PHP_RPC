@@ -4,6 +4,7 @@ namespace Models\Terminal;
 
 use Database\Database;
 use Core\{Validate};
+use Exception;
 use Models\Apartamentos\ModelApartamentos;
 use Models\General\ModelGeneral;
 use Models\Empleados\ModelEmpleados;
@@ -127,7 +128,7 @@ class ModelTerminal
                                             ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
                                                 'status'    => true,
                                                 'form'      => $value['formulario'],
-                                                'torres'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),                                                
+                                                'torres_aptos'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),                                                
                                                 'sede'      => (int)$value['id_sg_sede']
                                             ]
                                         ];
@@ -138,7 +139,7 @@ class ModelTerminal
                                             ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
                                                 'status'    => true,
                                                 'form'      => $value['formulario'],
-                                                'oficinas'  => ModelOficinas::ReadByOwner($value['creado_por']),
+                                                'torres_oficinas'  => ModelOficinas::ReadByOwner($value['creado_por']),
                                                 'sede'      => (int)$value['id_sg_sede']
                                             ]
                                         ];
@@ -397,6 +398,27 @@ class ModelTerminal
         }
     }
 
+    public function UploadPhotoVisitante()
+    {
+        if(!isset($this->formData['photo']))
+            return ['status' => false, 'message' => 'Photo is not defined'];
+        else
+        {
+            $updateRecord = Database::update([
+                'table'     => "sg_registros_mis_visitantes",
+                'fields'    => [
+                    'photo' => $this->modelGeneral->uploadImage($this->formData['photo'])
+                ],
+                'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."'"
+            ])->updateRow();
+
+            if($updateRecord)
+                return ['status' => true, 'message' => 'Photo Uploaded'];
+            else
+                return ['status' => false, 'message' => 'not uploaded'];
+        }
+    }
+
     /**
      * 
      */
@@ -449,10 +471,10 @@ class ModelTerminal
                             {
                                 $formVisitantes = [
                                     ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
-                                        'status'    => true,
-                                        'form'      => $value['formulario'],
-                                        'torres'    => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),
-                                        'sede'      => (int)$value['id_sg_sede']
+                                        'status'        => true,
+                                        'form'          => $value['formulario'],
+                                        'torres_aptos'  => ModelTorres::ReadByIdEmpresa($value['id_sg_empresa']),
+                                        'sede'          => (int)$value['id_sg_sede']
                                     ]
                                 ];
                             }
@@ -460,10 +482,10 @@ class ModelTerminal
                             {
                                 $formVisitantes = [
                                     ModelGeneral::setTipoRegistro($value['id_sg_tipo_registro']) => [
-                                        'status'    => true,
-                                        'form'      => $value['formulario'],
-                                        'oficinas'  => ModelOficinas::ReadByOwner($value['creado_por']),
-                                        'sede'      => (int)$value['id_sg_sede']
+                                        'status'            => true,
+                                        'form'              => $value['formulario'],
+                                        'torres_oficinas'   => ModelOficinas::ReadByOwner($value['creado_por']),
+                                        'sede'              => (int)$value['id_sg_sede']
                                     ]
                                 ];
                             }                               
@@ -542,6 +564,15 @@ class ModelTerminal
 
                 if($visitanteExist)
                 {
+                    $hasVisita = ModelGeneral::recordExist([
+                        'fields'    => "*",
+                        'table'     => "sg_registros_mis_visitantes",
+                        'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' AND id_sg_torre = '".$this->formData['idtorre']."' AND id_sg_apto = '". $this->formData['idaptooficina'] ."' AND estado_salida = 0"
+                    ]);
+    
+                    if($hasVisita)
+                        return ['status' => false, 'message' => 'Este visitante cuenta con un registro, por favor dele salida'];
+
                     $lastIdVisitante = Database::query([
                         'fields'    => "id_sg_visitante",
                         'table'     => "sg_mis_visitantes",
@@ -560,7 +591,7 @@ class ModelTerminal
                             'salida_visita'             => _ERROR_NO_REGISTRA_SALIDA,
                             'estado_salida'             => 0,
                             'fecha_registro'            => Database::dateTime(),
-                            'photo'                     => $this->modelGeneral->uploadImage($this->formData['photo']),
+                            'photo'                     => 0,
                             'creado_por'                => $this->formData['uid']
                         ],
                         'autoinc'  => true                    
@@ -573,6 +604,15 @@ class ModelTerminal
                 }
                 else
                 {
+                    $hasVisita = ModelGeneral::recordExist([
+                        'fields'    => "*",
+                        'table'     => "sg_registros_mis_visitantes",
+                        'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' AND id_sg_torre = '".$this->formData['idtorre']."' AND id_sg_apto = '". $this->formData['idaptooficina'] ."' AND estado_salida = 0"
+                    ]);
+    
+                    if($hasVisita)
+                        return ['status' => false, 'message' => 'Este visitante cuenta con un registro, por favor dele salida'];
+
                     $registraVisitante = Database::insert([
                         'table'     => "sg_mis_visitantes",
                         'values'    => [
@@ -602,14 +642,14 @@ class ModelTerminal
                             'salida_visita'             => _ERROR_NO_REGISTRA_SALIDA,
                             'estado_salida'             => 0,
                             'fecha_registro'            => Database::dateTime(),
-                            'photo'                     => $this->modelGeneral->uploadImage($this->formData['photo']),
+                            'photo'                     => 0,
                             'creado_por'                => $this->formData['uid']
                         ],
                         'autoinc'  => true                    
                     ])->affectedRow();
 
                     if($registraVisitante && $registraVisitaResidencial)
-                        return ['status' => true, 'message' => 'Visitante registrado exitosamente'];
+                        return ['status' => true, 'message' => 'Visitante registrado exitosamente here'];
                     else
                         return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el visitante'];
                 }
@@ -638,16 +678,42 @@ class ModelTerminal
             $visitasHistoric = Database::query([
                 'fields'    => "smv.nombres_visitante, srmv.fecha_visita",
                 'table'     => "sg_registros_mis_visitantes srmv JOIN sg_mis_visitantes smv ON srmv.id_sg_visitante = smv.id_sg_visitante",
-                'arguments' => "srmv.id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' ORDER BY fecha_registro DESC"
+                'arguments' => "srmv.id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' ORDER BY fecha_registro DESC LIMIT 1"
             ])->records()->resultToArray();
 
-            if(!ModelGeneral::hasRows($visitasHistoric))            
-                return ['status' => true, 'message'   => 'No existen registros'];
+            $hasSalidas = ModelGeneral::recordExist([
+                'fields'    => "*",
+                'table'     => "sg_registros_mis_visitantes",
+                'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' AND salida_visita = '0000-00-00 00:00:00' AND estado_salida = '0'"
+            ]);
+
+            if($hasSalidas)
+            {
+                $salida = Database::update([
+                    'table'      => "sg_registros_mis_visitantes",
+                    'fields'      => [
+                        'salida_visita'  => Database::dateTime(),
+                        'estado_salida'  => 1
+                    ],
+                    'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' AND salida_visita = '0000-00-00 00:00:00' AND estado_salida = 0"
+                ])->updateRow();
+
+                if($salida)
+                {
+                    return [
+                        'status'        => true,
+                        'visitante'     => '',
+                        'message'       => 'Gracias ' . $visitasHistoric[0]['nombres_visitante'] . ' por tu visita!',
+                        'ultima_visita' => (empty($visitasHistoric[0]['fecha_visita'])) ? '' : $visitasHistoric[0]['fecha_visita']
+                    ];
+                }
+            }
             else
             {
                 return [
-                    'status'        => true, 
+                    'status'        => true,
                     'visitante'     => $visitasHistoric[0]['nombres_visitante'],
+                    'message'       => 'No tiene registros de entrada',
                     'ultima_visita' => (empty($visitasHistoric[0]['fecha_visita'])) ? '' : $visitasHistoric[0]['fecha_visita']
                 ];
             }
