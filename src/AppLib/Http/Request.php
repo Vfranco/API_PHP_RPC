@@ -2,6 +2,8 @@
 
 namespace AppLib\Http;
 
+use Exception;
+
 class Request
 {
     static function input($arg)
@@ -62,6 +64,27 @@ class Request
     static function decode($input)
     {
         return json_decode($input, true);
+    }
+
+    static function getRequest($url)
+    {
+        try {
+            $curl = curl_init();
+
+            curl_setopt_array($curl, 
+            [
+                CURLOPT_RETURNTRANSFER  => 1,
+                CURLOPT_URL             => $url,
+                CURLOPT_USERAGENT       => 'Codular Sample cURL Request'
+            ]);
+
+            $response = curl_exec($curl);
+
+            curl_close($curl);
+
+        } catch (Exception $e){
+            return ['status' => false, 'exception' => $e->getMessage()];
+        }
     }
 
     static function apiResource(array $postData, string $urlController)

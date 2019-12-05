@@ -16,6 +16,7 @@ define('CMS_VERSION',   '1.0');
  * BASE_URL - Local
  */
 define('BASE_URL', 'http://api.sigga.com.co/');
+define('NODE_SERVER', 'http://localhost:3000');
 
 /**
  * BASE_URL - Server
@@ -62,7 +63,7 @@ define('MENU_DEFAULT', [
             'href'      => '#!/contratistas',
             'icon'      => 'building',
             'color'     => 'yellow',
-            'estado'    => 2,
+            'estado'    => 1,
             'posicion'  => 3
         ],
         'Mis Terminales'    => [

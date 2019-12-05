@@ -49,6 +49,9 @@ class ModelAuthentication extends ModelGeneral
             $this->aclUser = $this->formData['userAcl'];
             $this->aclPass = $this->formData['passAcl'];
 
+            if(!preg_match('/@/', $this->aclUser))
+                return $this->isControlUser($this->aclUser, $this->aclPass);
+
             $this->checkIfActive($this->aclUser);
 
             if ($this->isSessionActive($this->getIdUserByEmail($this->aclUser)))
@@ -71,6 +74,34 @@ class ModelAuthentication extends ModelGeneral
             }
         } catch (Exception $e) {
             error_log(print_r($e->getMessage(), true));
+        }
+    }
+
+    private function isControlUser($user, $pass)
+    {
+        $existUserControl = ModelGeneral::recordExist([
+            'fields'    => "*",
+            'table'     => "sg_usuarios_control",
+            'arguments' => "usuario = '". Database::escapeSql($user) ."' AND password = '". Database::escapeSql($pass) ."' LIMIT 1"
+        ]);
+
+        if(!$existUserControl)
+            return ['status' => false, 'message' => 'Usuario y/o Contraseña invalidos'];
+
+        $owner = Database::query([
+            'fields'    => "*",
+            'table'     => "sg_usuarios_control",
+            'arguments' => "usuario = '". Database::escapeSql($user) ."' AND password = '". Database::escapeSql($pass) ."' LIMIT 1"
+        ])->records()->resultToArray();
+
+        if(!ModelGeneral::hasRows($owner))
+            return false;
+        else
+        {
+            return [
+                'status'    => true,
+                'owner'     => $owner[0]['creado_por']
+            ];
         }
     }
 
@@ -171,8 +202,10 @@ class ModelAuthentication extends ModelGeneral
 
         $result = [];
 
-        foreach ($active[0] as $key => $value) {
-            if ($value != 1) {
+        foreach ($active[0] as $key => $value)
+        {
+            if ($value != 1)
+            {
                 $result = ['status' => false, 'message' => $key . " no se encuentra activo"];
                 break;
             }

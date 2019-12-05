@@ -248,7 +248,20 @@ class ModelUsuarios
                     'arguments' => "id_sg_usuario = '". ModelGeneral::getIdUserByDecode($this->formData['user']) ."'"
                 ])->updateRow();
 
-                if($updateTipoRegistro)
+                $tipo_control = 1;
+
+                if(preg_match('/empresas/', $this->formData['entrypoint']))
+                    $tipo_control = 2;
+
+                $updateTipoControl = Database::update([
+                    'table'     => "sg_registros",
+                    'fields'    => [
+                        'id_sg_tipo_control'   => $tipo_control
+                    ],
+                    'arguments' => "correo = '". ModelGeneral::getCorreoByDecode($this->formData['user']) ."'"
+                ])->updateRow();
+
+                if($updateTipoRegistro && $updateTipoControl)
                     return ['status' => true, 'message' => 'Usuario Actualizado'];
                 else
                     return ['status' => false, 'message' => 'Ha ocurrido un error al actualizar el Autorizado'];

@@ -35,6 +35,34 @@ class ModelGeneral
         return $username[0]['id_sg_terminal_usuario'];
     }
 
+    public static function getIdProveedorByUid($uid)
+    {
+        $getId = Database::query([
+            'fields'    => "id_sg_mi_proveedor",
+            'table'     => "sg_mis_proveedores",
+            'arguments' => "creado_por = '". $uid ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_mi_proveedor'];
+    }
+
+    public static function getIdContratistaByCedula($cedula)
+    {
+        $getId = Database::query([
+            'fields'    => "id_sg_personal_proveedor",
+            'table'     => "sg_personal_proveedor",
+            'arguments' => "cedula_proveedor = '". $cedula ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getId[0]['empty']) && $getId[0]['empty'] == true)
+            return [];
+
+        return $getId[0]['id_sg_personal_proveedor'];
+    }
+
     public static function getIdEmpresaByUser($user)
     {
         $getIdUser = self::getIdUserByDecode($user);
@@ -559,6 +587,79 @@ class ModelGeneral
 
         return $result;
     }
+
+    public function getActividadesList($uid)
+    {
+        $getEps = Database::query([
+            'fields'    => "id_sg_tipo_de_actividad, nombre_actividad, id_sg_estado as estado",
+            'table'     => "sg_tipos_de_actividad"
+        ])->records()->resultToArray();
+
+        if(isset($getEps[0]['empty']) && $getEps[0]['empty'] == true)
+            return [];
+
+        $result = [];
+
+        foreach($getEps as $key => $value)
+        {
+            if($getEps[$key]['estado'] != _ID_ESTADO_INACTIVO)
+            {
+                if($getEps[$key]['nombre_actividad'] === _OTRA_ACTIVIDAD)
+                {
+                    $result[] = [
+                        'idActividad'       => 1000,
+                        'nombreActividad'   => $getEps[$key]['nombre_actividad']
+                    ];
+                }
+                else
+                {
+                    $result[] = [
+                        'idActividad'       => (int) $getEps[$key]['id_sg_tipo_de_actividad'],
+                        'nombreActividad'   => $getEps[$key]['nombre_actividad']
+                    ];
+                }                
+            }            
+        }
+
+        return $result;
+    }
+
+    public function getEmpresasList($uid)
+    {
+        $getEmpresa = Database::query([
+            'fields'    => "id_sg_mi_proveedor, nombre_proveedor, id_sg_estado as estado",
+            'table'     => "sg_mis_proveedores",
+            'arguments' => "creado_por = '". $uid ."'"
+        ])->records()->resultToArray();
+
+        if(isset($getEmpresa[0]['empty']) && $getEmpresa[0]['empty'] == true)
+            return [];
+
+        $result = [];
+
+        foreach($getEmpresa as $key => $value)
+        {
+            if($getEmpresa[$key]['estado'] != _ID_ESTADO_INACTIVO)
+            {
+                if($getEmpresa[$key]['nombre_proveedor'] === _OTRA_ACTIVIDAD)
+                {
+                    $result[] = [
+                        'idEmpresa'       => 1000,
+                        'nombreEmpresa'   => $getEmpresa[$key]['nombre_proveedor']
+                    ];
+                }
+                else
+                {
+                    $result[] = [
+                        'idEmpresa'       => (int) $getEmpresa[$key]['id_sg_mi_proveedor'],
+                        'nombreEmpresa'   => $getEmpresa[$key]['nombre_proveedor']
+                    ];
+                }                
+            }            
+        }
+
+        return $result;
+    }
     
     public static function recordExist($args)
     {        
@@ -583,7 +684,7 @@ class ModelGeneral
 
         return $getData[0]['id_sg_visitante'];
     }
-
+    
     public static function hasRows($resource)
     {
         if(isset($resource[0]['empty']) && $resource[0]['empty'] == true)

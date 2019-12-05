@@ -38,14 +38,14 @@ class ModelUsuariosTerminal
                 if($hasUserTerminal)
                     return ['status' => false, 'message' => 'Ya se encuentra registrado este usuario'];
 
-                $hasSede = ModelGeneral::recordExist([
+                $hasFormularioCreado = ModelGeneral::recordExist([
                     'fields'     => "*",
                     'table'      => "sg_terminales",
-                    'arguments'  => "id_sg_sede = '". $this->formData['sede'] ."'"
+                    'arguments'  => "id_sg_tipo_registro = '". $this->formData['tipo'] ."' AND creado_por = '". $this->formData['uid'] ."'"
                 ]);
 
-                if($hasSede)
-                    return ['status' => false, 'message' => 'Ya existe una terminal asignada en esta Sede'];
+                if($hasFormularioCreado)
+                    return ['status' => false, 'message' => 'Ya se encuentra registrado el tipo de registro'];
                     
                 $registraUsuarioTerminal = Database::insert([
                     'table'     => "sg_terminal_usuarios",
@@ -72,7 +72,7 @@ class ModelUsuariosTerminal
                         'type'          => 'text',
                         'required'      => false,
                         'placeholder'   => '',
-                        'show'          => true
+                        'show'          => false
                     ],                    
                     'photo'             => $this->formData['photo'],
                     'eps'               => $this->formData['eps'],
@@ -104,6 +104,34 @@ class ModelUsuariosTerminal
         } catch(Exception $e){
             return ['status' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    public static function ReadTipoRegistro()
+    {
+        $resultSet = Database::query([
+            'fields'    => "*",
+            'table'     => "sg_tipo_registro"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron registros'];
+        
+        $elements = [];
+
+        foreach($resultSet as $i => $item)
+        {
+            $data = [
+                'id'    => (int) $item['id_sg_tipo_registro'],
+                'prop'  => $item['tipo_registro']
+            ];
+
+            array_push($elements, $data);
+        }
+
+        return [
+            'status'    => true,
+            'combo'      => $elements
+        ];
     }
 
     public function ReadById()
@@ -211,7 +239,7 @@ class ModelUsuariosTerminal
                         'type'          => 'text',
                         'required'      => false,
                         'placeholder'   => '',
-                        'show'          => true
+                        'show'          => false
                     ],                    
                     'photo'             => $this->formData['photo'],
                     'eps'               => $this->formData['eps'],
@@ -240,5 +268,106 @@ class ModelUsuariosTerminal
         } catch (\Exception $e){
             return ['status' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    public function CheckUsuarioTerminal()
+    {
+        $resultSet = Database::query([
+            'fields'    => "*",
+            'table'     => "sg_terminal_usuarios",
+            'arguments' => "creado_por = '". $this->formData['uid'] ."'"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron registros'];
+        
+        $elements = [];
+
+        foreach($resultSet as $i => $item)
+        {
+            $data = [
+                'id'    => $item['id_sg_terminal_usuario'],
+                'prop'  => $item['usuario']
+            ];
+
+            array_push($elements, $data);
+        }
+
+        return [
+            'status'    => true,
+            'combo'     => $elements
+        ];
+    }
+
+    public function CreateTerminal()
+    {
+        try {
+            if(!Validate::notEmptyFields($this->formData))
+                return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
+            else
+            {
+                $hasFormularioCreado = ModelGeneral::recordExist([
+                    'fields'     => "*",
+                    'table'      => "sg_terminales",
+                    'arguments'  => "id_sg_tipo_registro = '". $this->formData['tipo'] ."' AND creado_por = '". $this->formData['uid'] ."'"
+                ]);
+
+                if($hasFormularioCreado)
+                    return ['status' => false, 'message' => 'Ya se encuentra registrado el tipo de registro'];
+                
+                $formulario = [
+                    'c1'    => [
+                        'type'          => 'text',
+                        'required'      => false,
+                        'placeholder'   => '',
+                        'show'          => false
+                    ],                    
+                    'photo'             => $this->formData['photo'],
+                    'eps'               => $this->formData['eps'],
+                    'arl'               => $this->formData['arl'],
+                    'cursos'            => $this->formData['cursos']
+                ];
+
+                $registraTerminal = Database::insert([
+                    'table'     => "sg_terminales",
+                    'values'    => [
+                        'id_sg_empresa'         => ModelGeneral::getIdEmpresaByUser($this->formData['uid']),
+                        'id_sg_sede'            => (int) $this->formData['sede'],
+                        'id_sg_estado'          => 1,
+                        'id_sg_terminal_usuario'=> $this->formData['idusuario'],
+                        'id_sg_tipo_registro'   => $this->formData['tipo'],
+                        'id_sg_tipo_control'    => $this->modelGeneral->getTipoControlByUser($this->formData['uid']),
+                        'formulario'            => json_encode($formulario),
+                        'fecha_registro'        => Database::dateTime(),
+                        'creado_por'            => $this->formData['uid']
+                    ],
+                    'autoinc'   => true
+                ])->affectedRow();
+
+                if($registraTerminal)
+                    return ['status' => true, 'message' => 'Usuario terminal registrado'];
+                else
+                    return ['status' => false, 'message' => 'Ha ocurrido un error al crear el usuario de la terminal'];
+            }
+        } catch(Exception $e){
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function ReadUsuariosTerminales()
+    {
+        $resultSet = Database::query([
+            'fields'    => "*",
+            'table'     => "sg_terminal_usuarios",
+            'arguments' => "creado_por = '". $this->formData['uid'] ."'"
+        ])->records()->resultToArray();
+
+        if(isset($resultSet[0]['empty']) && $resultSet[0]['empty'] == true)
+            return ['status' => false, 'message' => 'No se encontraron registros'];
+       
+        return [
+            'status'    => true,
+            'rows'     => $resultSet
+        ];
     }
 }

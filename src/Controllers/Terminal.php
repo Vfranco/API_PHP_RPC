@@ -36,6 +36,13 @@ class Terminal
         Response::status(200)->json($obj->CreateVisitante());
     }
 
+    static function CreateContratista()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CreateContratista());
+    }
+
     static function RegistraActividad()
     {
         ActionFilters::Get();
@@ -43,11 +50,25 @@ class Terminal
         Response::status(200)->json($obj->RegistraActividad());
     }
 
-    static function checkVisitante()
+    static function CheckMiPersonal()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CheckMiPersonal());
+    }
+
+    static function CheckVisitante()
     {
         ActionFilters::Get();
         $obj = new ModelTerminal(Request::phpInput());
         Response::status(200)->json($obj->checkVisitante());
+    }
+
+    static function CheckContratista()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CheckContratista());
     }
 
     static function RegistraVisitaResidencial()
@@ -87,8 +108,22 @@ class Terminal
 
     static function CreateUserTerminal()
     {
+        /*ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CreateUserTerminal());*/
+    }
+
+    static function RegistraActividadContratista()
+    {
         ActionFilters::Get();
         $obj = new ModelTerminal(Request::phpInput());
-        Response::status(200)->json($obj->CreateUserTerminal());
+        Response::status(200)->json($obj->RegistraActividadContratista());
+    }
+
+    static function UploadPhotoContratista()
+    {
+        ActionFilters::Get();
+        $obj = new ModelTerminal(Request::phpInput());
+        Response::status(200)->json($obj->UploadPhotoContratista());
     }
 }

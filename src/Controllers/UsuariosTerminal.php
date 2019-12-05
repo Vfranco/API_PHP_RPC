@@ -15,6 +15,13 @@ class UsuariosTerminal
         Response::status(200)->json($obj->CreateUserTerminal());
     }
 
+    static function CreateTerminal()
+    {
+        ActionFilters::Get();
+        $obj = new ModelUsuariosTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CreateTerminal());
+    }
+
     static function ReadById()
     {
         ActionFilters::Get();
@@ -26,6 +33,19 @@ class UsuariosTerminal
     {
         ActionFilters::Get();        
         Response::status(200)->json(ModelUsuariosTerminal::ReadTiposControl());
+    }
+
+    static function ReadTipoRegistro()
+    {
+        ActionFilters::Get();
+        Response::status(200)->json(ModelUsuariosTerminal::ReadTipoRegistro());
+    }
+
+    static function ReadUsuariosTerminales()
+    {
+        ActionFilters::Get();
+        $obj = new ModelUsuariosTerminal(Request::phpInput());
+        Response::status(200)->json($obj->ReadUsuariosTerminales());
     }
 
     static function DeleteTerminal()
@@ -47,5 +67,12 @@ class UsuariosTerminal
         ActionFilters::Get();
         $obj = new ModelUsuariosTerminal(Request::phpInput());
         Response::status(200)->json($obj->UpdateTerminal());
+    }
+
+    static function CheckUsuarioTerminal()
+    {
+        ActionFilters::Get();
+        $obj = new ModelUsuariosTerminal(Request::phpInput());
+        Response::status(200)->json($obj->CheckUsuarioTerminal());
     }
 }
