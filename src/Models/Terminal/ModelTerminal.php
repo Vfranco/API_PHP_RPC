@@ -48,7 +48,7 @@ class ModelTerminal
                 $hasActiveSession = Database::query([
                     'fields'    => "*",
                     'table'     => "sg_terminales_conectadas",
-                    'arguments' => "id_sg_terminal = '". ModelGeneral::getTerminalIdByUserName($this->formData['usuario']) ."'"
+                    'arguments' => "id_sg_terminal_usuario = '". ModelGeneral::getTerminalIdByUserName($this->formData['usuario']) ."'"
                 ])->records()->resultToArray();
         
                 if(ModelGeneral::hasRows($hasActiveSession))                                    
@@ -77,9 +77,9 @@ class ModelTerminal
                 Database::insert([
                     'table'     => "sg_terminales_conectadas",
                     'values'    => [
-                        'id_sg_terminal'    => $userTerminal,
-                        'direccion_ip'      => _REMOTE_ADDR_GENERAL,
-                        'fecha_conexion'    => Database::dateTime()
+                        'id_sg_terminal_usuario'    => $userTerminal,
+                        'direccion_ip'              => _REMOTE_ADDR_GENERAL,
+                        'fecha_conexion'            => Database::dateTime()
                     ],
                     'autoinc'      => true                    
                 ])->affectedRow();
@@ -200,7 +200,7 @@ class ModelTerminal
                         'empresa'   => [
                             'nombre'        => $userDataSession[0]['nombre_empresa'],
                             'sede'          => $userDataSession[0]['nombre_sede'],
-                            'terminal'      => (int) $userDataSession[0]['id_sg_terminal_usuario'],
+                            'terminal'      => (int) $userTerminal,
                             'id_sede'       => (int) $userDataSession[0]['id_sg_sede'],
                             'uid'           => $userDataSession[0]['creado_por'],
                             'tipo_control'  => (int) $userDataSession[0]['id_sg_tipo_control']
@@ -224,7 +224,7 @@ class ModelTerminal
         $terminalExist = ModelGeneral::recordExist([
             'fields'     => "*",
             'table'      => "sg_terminales_conectadas",
-            'arguments'  => "id_sg_terminal = '". Database::escapeSql($this->formData['terminal']) ."'"
+            'arguments'  => "id_sg_terminal_usuario = '". Database::escapeSql($this->formData['terminal']) ."'"
         ]);
 
         if(!$terminalExist)
@@ -232,7 +232,7 @@ class ModelTerminal
 
         $logout = Database::delete([
             'table'     => "sg_terminales_conectadas",
-            'arguments' => "id_sg_terminal = '". $this->formData['terminal'] ."'"
+            'arguments' => "id_sg_terminal_usuario = '". $this->formData['terminal'] ."'"
         ])->deleteRow();
 
         if($logout)
@@ -268,7 +268,7 @@ class ModelTerminal
             $hasSalidas = ModelGeneral::recordExist([
                 'fields'    => "*",
                 'table'     => "sg_registros_mi_personal",
-                'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND fecha_salida = '0000-00-00 00:00:00' AND estado_salida = '0'"
+                'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND fecha_salida = '0000-00-00 00:00:00' AND estado_salida = 0"
             ]);
 
             if($hasSalidas)
@@ -279,12 +279,12 @@ class ModelTerminal
                         'fecha_salida'      => Database::dateTime(),
                         'estado_salida'     => 1
                     ],
-                    'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND fecha_salida = '0000-00-00 00:00:00' AND estado_salida = '0'"
+                    'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND fecha_salida = '0000-00-00 00:00:00' AND estado_salida = 0"
                 ])->updateRow();
 
                 if($salida)
                 {
-                    //Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                    Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
 
                     return [
                         'status'        => true,
@@ -298,7 +298,7 @@ class ModelTerminal
             }
             else
             {
-                //Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
 
                 return [
                     'status'        => true,
@@ -308,100 +308,162 @@ class ModelTerminal
                 ];
             }
         }
-    }
+    }    
 
     public function CreatePersonal()
     {
         try{
             if(Validate::notEmptyFields($this->formData))
-                return ['status' => false, 'message' => 'Campos Requeridos'];
+                return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
+
+            $obj = new ModelEmpleados($this->formData);
+            $response = $obj->Create();
+
+            if($response['status'])
+            {
+                $saveActividadIngreso = Database::insert([
+                    'table'     => "sg_registros_mi_personal",
+                    'values'    => [
+                        'id_sg_empresa'     => ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']),
+                        'id_sg_sede'        => $this->formData['sede'],
+                        'id_sg_personal'    => ModelGeneral::getIdPersonalByCedula($this->formData['cedula']),
+                        'id_sg_visitada'    => ModelGeneral::getIdSedeByTerminal($this->formData['terminal']),                                
+                        'fecha_ingreso'     => Database::dateTime(),
+                        'fecha_salida'      => _ERROR_NO_REGISTRA_SALIDA,
+                        'estado_salida'     => 0,
+                        'fecha_registro'    => Database::dateTime(),
+                        'creado_por'        => $this->formData['idEmpresa']
+                    ],
+                    'autoinc'   => true                        
+                ])->affectedRow();
+
+                if($saveActividadIngreso)
+                {
+                    Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['idEmpresa']);
+                    return ['status' => true, 'message' => 'Bienvenido, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']) . ' a la sede ' . ModelGeneral::getNombreSedeById($this->formData['sede']), 'entrada' => Database::dateTime()];
+                }
+                else
+                    return ['status' => false, 'message' => 'La actividad no pudo ser guardada'];
+            }
+
+
+        } catch(\Exception $e){
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function RegistraActividad()
+    {
+        try{
+            if(Validate::notEmptyFields($this->formData))
+                return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
-                $personalExist = ModelGeneral::recordExist([
+                $existMiPersonal = ModelGeneral::recordExist([
                     'fields'    => "*",
                     'table'     => "sg_mi_personal",
-                    'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
+                    'arguments' => "cedula_personal = '". Database::escapeSql($this->formData['cedula']) ."' AND id_sg_empresa = '".ModelGeneral::getIdEmpresaByUser($this->formData['uid'])."'"
                 ]);
 
-                if($personalExist)
+                if(!$existMiPersonal)
+                    return ['status' => false, 'message' => 'Empleado no registrado en la Empresa'];
+
+                $checkTerminalUid = Database::query([
+                    'fields'    => "*",
+                    'table'     => "sg_terminal_usuarios",
+                    'arguments' => "id_sg_terminal_usuario = '". $this->formData['terminal'] ."'"
+                ])->records()->resultToArray();
+
+                if($this->formData['uid'] != $checkTerminalUid[0]['creado_por'])
+                    return ['status' => false, 'message' => 'El empleado que desea validar, no pertenece a esta empresa'];  
+
+                $existSedePersonal = ModelGeneral::recordExist([
+                    'fields'    => "*",
+                    'table'     => "sg_mi_personal",
+                    'arguments' => "cedula_personal = '". Database::escapeSql($this->formData['cedula']) ."' AND id_sg_sede = '". ModelGeneral::getIdSedeByCedula($this->formData['cedula']) ."'"
+                ]);
+
+                if(!$existSedePersonal)
+                    return ['status' => false, 'message' => 'Empleado no registrado en esta Sede', 'sede' => ModelGeneral::getNombreSedeById($this->formData['sede'])];
+
+                $existTerminal = ModelGeneral::recordExist([
+                    'fields'    => "*",
+                    'table'     => "sg_terminales",
+                    'arguments' => "id_sg_terminal = '". Database::escapeSql($this->formData['terminal']) ."'"
+                ]);
+
+                if(!$existTerminal)
+                    return ['status' => false, 'message' => 'Terminal no registrada'];
+
+                $statusEmpleado = Database::query([
+                    'fields'    => "id_sg_estado",
+                    'table'     => "sg_mi_personal",
+                    'arguments' => "cedula_personal = '". $this->formData['cedula'] ."' AND id_sg_empresa = '".ModelGeneral::getIdEmpresaByUser($this->formData['uid'])."' LIMIT 1"
+                ])->records()->resultToArray();
+
+                if(ModelGeneral::hasRows($statusEmpleado))
                 {
-                    $hasVisita = ModelGeneral::recordExist([
-                        'fields'    => "*",
-                        'table'     => "sg_registros_mi_personal",
-                        'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND fecha_salida = '". _ERROR_NO_REGISTRA_SALIDA ."' AND estado_salida = 0"
-                    ]);
-    
-                    if($hasVisita)
-                        return ['status' => false, 'message' => 'Este personal cuenta con un registro, por favor dele salida'];
+                    if($statusEmpleado[0]['id_sg_estado'] != 1)
+                        return ['status' => false, 'message' => 'El empleado ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']), 'estado' => 'Inactivo'];
+                }
 
-                    $lastIdPersonal = Database::query([
-                        'fields'    => "id_sg_personal",
-                        'table'     => "sg_mi_personal",
-                        'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
-                    ])->records()->resultToArray();
-                    
-                    $registraVisitaResidencial = Database::insert([
-                        'table'     => "sg_registros_mi_personal",
-                        'values'    => [
-                            'id_sg_empresa'     => ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']),
-                            'id_sg_sede'        => $this->formData['sede'],
-                            'id_sg_personal'    => ModelGeneral::getIdPersonalByCedula($this->formData['cedula']),
-                            'id_sg_visitada'    => ModelGeneral::getIdSedeByTerminal($this->formData['terminal']),                                
-                            'fecha_ingreso'     => Database::dateTime(),
-                            'fecha_salida'      => _ERROR_NO_REGISTRA_SALIDA,
-                            'estado_salida'     => 0,
-                            'fecha_registro'    => Database::dateTime(),
-                            'creado_por'        => $this->formData['idEmpresa']
-                        ],
-                        'autoinc'  => true                    
-                    ])->affectedRow();
+                $hasRecord = Database::query([
+                    'fields'    => "*",
+                    'table'     => "sg_registros_mi_personal",
+                    'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND id_sg_empresa = '".ModelGeneral::getIdEmpresaByUser($this->formData['uid'])."' AND fecha_salida = '". _ERROR_NO_REGISTRA_SALIDA ."' ORDER BY id_sg_registro DESC LIMIT 1"
+                ])->records()->resultToArray();                
 
-                    //Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['idEmpresa']);
+                if(ModelGeneral::hasRows($hasRecord))
+                {
+                    if($hasRecord[0]['fecha_salida'] !== _ERROR_NO_REGISTRA_SALIDA)
+                    {
+                        $saveActividadIngreso = Database::insert([
+                            'table'     => "sg_registros_mi_personal",
+                            'values'    => [
+                                'id_sg_empresa'     => ModelGeneral::getIdEmpresaByUser($this->formData['uid']),
+                                'id_sg_sede'        => $this->formData['sede'],
+                                'id_sg_personal'    => ModelGeneral::getIdPersonalByCedula($this->formData['cedula']),
+                                'id_sg_visitada'    => ModelGeneral::getIdSedeByTerminal($this->formData['terminal']),                                
+                                'fecha_ingreso'     => Database::dateTime(),
+                                'fecha_salida'      => _ERROR_NO_REGISTRA_SALIDA,
+                                'estado_salida'     => 0,
+                                'fecha_registro'    => Database::dateTime(),
+                                'creado_por'        => $this->formData['uid']
+                            ],
+                            'autoinc'   => true                        
+                        ])->affectedRow();                        
     
-                    if($registraVisitaResidencial)
-                        return ['status' => true, 'message' => 'Personal registrado exitosamente'];
+                        if($saveActividadIngreso)
+                        {
+                            Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                            return ['status' => true, 'message' => 'Bienvenido, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']) . ' a la sede ' . ModelGeneral::getNombreSedeById($this->formData['sede']), 'entrada' => Database::dateTime()];
+                        }
+                        else
+                            return ['status' => false, 'message' => 'La actividad no pudo ser guardada'];
+                    }
                     else
-                        return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el visitante'];
+                    {
+                        $updateSalida = Database::update([
+                            'table'     => "sg_registros_mi_personal",
+                            'fields'    => [
+                                'fecha_salida'      => Database::dateTime(),
+                                'estado_salida'     => 1
+                            ],
+                            'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND id_sg_sede = '". $this->formData['sede'] ."'"
+                        ])->updateRow();                        
+
+                        if($updateSalida)
+                        {
+                            Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                            return ['status' => true, 'message' => 'Gracias por tu visita, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']), 'salida' => Database::dateTime()];
+                        }
+                        else
+                            return ['status' => false, 'message' => 'Ha ocurrido un error al actualizar la salida'];
+                    }                    
                 }
                 else
                 {
-                    $hasVisita = ModelGeneral::recordExist([
-                        'fields'    => "*",
-                        'table'     => "sg_registros_mi_personal",
-                        'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND fecha_salida = '". _ERROR_NO_REGISTRA_SALIDA ."' AND estado_salida = 0"
-                    ]);
-    
-                    if($hasVisita)
-                        return ['status' => false, 'message' => 'Este visitante cuenta con un registro, por favor dele salida'];
-
-                    $saveEmpleado = Database::insert([
-                        'table'     => 'sg_mi_personal',
-                        'values'    => [
-                            "id_sg_empresa"         => ModelGeneral::getIdEmpresaByUser($this->formData['idEmpresa']),
-                            "id_sg_sede"            => $this->formData['sede'],
-                            "id_sg_estado"          => 1,
-                            "id_sg_arl"             => $this->formData['arl'],
-                            "id_sg_eps"             => $this->formData['eps'],
-                            "cedula_personal"       => $this->formData['cedula'],
-                            "nombres_personal"	    => $this->formData['nombres'],
-                            "apellidos_personal"	=> $this->formData['apellidos'],
-                            "direccion_personal"    => $this->formData['direccion'],
-                            "telfono_personal"      => $this->formData['telefono'],
-                            "correo_personal"       => $this->formData['email'],
-                            "photo_personal"        => (!isset($this->formData['photo'])) ? '0' : $this->modelGeneral->uploadImage($this->formData['photo']),
-                            "fecha_registro"        => Database::dateTime(),
-                            "creado_por"            => $this->formData['idEmpresa']
-                        ],
-                        'autoinc'   => true                    
-                    ])->affectedRow();
-    
-                    $lastIdVisitante = Database::query([
-                        'fields'    => "id_sg_personal",
-                        'table'     => "sg_mi_personal",
-                        'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
-                    ])->records()->resultToArray();
-                    
-                    $registraVisitaResidencial = Database::insert([
+                    $saveActividadIngreso = Database::insert([
                         'table'     => "sg_registros_mi_personal",
                         'values'    => [
                             'id_sg_empresa'     => ModelGeneral::getIdEmpresaByUser($this->formData['uid']),
@@ -412,21 +474,21 @@ class ModelTerminal
                             'fecha_salida'      => _ERROR_NO_REGISTRA_SALIDA,
                             'estado_salida'     => 0,
                             'fecha_registro'    => Database::dateTime(),
-                            'creado_por'        => $this->formData['idEmpresa']
+                            'creado_por'        => $this->formData['uid']
                         ],
-                        'autoinc'  => true                    
+                        'autoinc'   => true                        
                     ])->affectedRow();
 
-                    //Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['idEmpresa']);
-
-                    if($registraVisitaResidencial && $saveEmpleado)
-                        return ['status' => true, 'message' => 'Personal registrado exitosamente'];
+                    if($saveActividadIngreso)
+                    {
+                        Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                        return ['status' => true, 'message' => 'Bienvenido, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']) . ' a la sede ' . ModelGeneral::getNombreSedeById($this->formData['sede']), 'entrada' => Database::dateTime()];
+                    }
                     else
-                        return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el personal'];
+                        return ['status' => false, 'message' => 'La actividad no pudo ser guardada'];
                 }
             }
-
-        } catch(\Exception $e){
+        } catch (\Exception $e){
             return ['status' => false, 'message' => $e->getMessage()];
         }
     }
@@ -468,7 +530,7 @@ class ModelTerminal
 
                 if($salida)
                 {
-                    //Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                    Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
 
                     return [
                         'status'        => true,
@@ -480,7 +542,7 @@ class ModelTerminal
             }
             else
             {
-                //Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
 
                 return [
                     'status'        => true,
@@ -538,12 +600,13 @@ class ModelTerminal
                             'creado_por'                => $this->formData['uid']
                         ],
                         'autoinc'  => true                    
-                    ])->affectedRow();
-
-                    //Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                    ])->affectedRow();                    
     
                     if($registraVisitaResidencial)
+                    {
+                        Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Visitante registrado exitosamente'];
+                    }
                     else
                         return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el visitante'];
                 }
@@ -591,12 +654,13 @@ class ModelTerminal
                             'creado_por'                => $this->formData['uid']
                         ],
                         'autoinc'  => true                    
-                    ])->affectedRow();
-
-                    //Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                    ])->affectedRow();                    
 
                     if($registraVisitante && $registraVisitaResidencial)
+                    {
+                        Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Visitante registrado exitosamente here'];
+                    }
                     else
                         return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el visitante'];
                 }
@@ -627,12 +691,30 @@ class ModelTerminal
 
             if(isset($visitasHistoric[0]['empty']) && $visitasHistoric[0]['empty'] == true)
             {
-                return [
-                    'status'        => true,
-                    'contratista'   => '',
-                    'message'       => 'No tiene registros de entrada',
-                    'ultima_visita' => (empty($visitasHistoric[0]['fecha_entrada'])) ? '' : $visitasHistoric[0]['fecha_entrada']
-                ];
+                $getDataContratista = Database::query([
+                    'fields'    => "*",
+                    'table'     => "sg_personal_proveedor",
+                    'arguments' => "cedula_proveedor = '". $this->formData['cedula'] ."'"
+                ])->records()->resultToArray();
+
+                if(ModelGeneral::hasRows($getDataContratista))
+                {
+                    return [
+                        'status'        => true,
+                        'contratista'   => (!isset($getDataContratista[0]['nombres_personal'])) ? '' : $getDataContratista[0]['nombres_personal'],
+                        'eps'           => 0,
+                        'arl'           => 0,
+                        'actividad'     => 0,
+                        'torre'         => 0,
+                        'aptooficina'   => 0,
+                        'empresa'       => (!isset($getDataContratista[0]['id_sg_mi_proveedor'])) ? 0 : (int) $getDataContratista[0]['id_sg_mi_proveedor'],
+                        'message'       => 'No tiene registros de entrada',
+                        'ultima_visita' => (empty($visitasHistoric[0]['fecha_entrada'])) ? '' : $visitasHistoric[0]['fecha_entrada'],
+                        'expedicion'    => (!isset($getDataContratista[0]['expedicion_cedula'])) ? '' : $getDataContratista[0]['expedicion_cedula'],
+                        'correo'        => (!isset($getDataContratista[0]['correo_personal'])) ? '' : $getDataContratista[0]['correo_personal'],
+                        'status_io'     => false
+                    ];
+                }
             }
 
             $hasSalidas = ModelGeneral::recordExist([
@@ -640,6 +722,8 @@ class ModelTerminal
                 'table'     => "sg_registros_mis_proveedores",
                 'arguments' => "id_sg_personal_proveedor = '". ModelGeneral::getIdContratistaByCedula($this->formData['cedula']) ."' AND fecha_salida = '0000-00-00 00:00:00' AND estado_salida = '0'"
             ]);
+
+            $getDataContratista = Database::storeProcedure("CALL getDataFromContratista('". $this->formData['cedula'] ."')")->records()->resultToArray();
 
             if($hasSalidas)
             {
@@ -652,15 +736,33 @@ class ModelTerminal
                     'arguments' => "id_sg_personal_proveedor = '". ModelGeneral::getIdContratistaByCedula($this->formData['cedula']) ."' AND fecha_salida = '0000-00-00 00:00:00' AND estado_salida = 0"
                 ])->updateRow();
 
+                Database::update([
+                    'table'     => "sg_personal_proveedor",
+                    'fields'    => [
+                        'id_sg_eps' => $this->formData['eps'],
+                        'id_sg_arl' => $this->formData['arl']
+                    ],
+                    'arguments' => "cedula_proveedor = '". $this->formData['cedula'] ."'"
+                ])->updateRow();
+
                 if($salida)
                 {
-                    //Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
+                    Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
 
                     return [
                         'status'        => true,
-                        'contratista'   => '',
+                        'contratista'   => $visitasHistoric[0]['nombres_personal'],
+                        'eps'           => (int) $visitasHistoric[0]['id_sg_eps'],
+                        'arl'           => (int) $visitasHistoric[0]['id_sg_arl'],
+                        'actividad'     => (int) $visitasHistoric[0]['id_sg_tipo_de_actividad'],
+                        'torre'         => (int) $visitasHistoric[0]['id_sg_torre'],
+                        'aptooficina'   => (int) $visitasHistoric[0]['id_apto_oficina'],
+                        'empresa'       => (int) $visitasHistoric[0]['id_sg_mi_proveedor'],
                         'message'       => 'Gracias ' . $visitasHistoric[0]['nombres_personal'],
-                        'ultima_visita' => (empty($visitasHistoric[0]['fecha_entrada'])) ? '' : $visitasHistoric[0]['fecha_entrada']
+                        'ultima_visita' => (empty($visitasHistoric[0]['fecha_entrada'])) ? '' : $visitasHistoric[0]['fecha_entrada'],
+                        'expedicion'    => ModelGeneral::changeFormatDate($visitasHistoric[0]['expedicion_cedula']),
+                        'correo'        => $visitasHistoric[0]['correo_personal'],
+                        'status_io'     => true
                     ];
                 }
                 else
@@ -668,13 +770,22 @@ class ModelTerminal
             }
             else
             {
-                //Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
+                Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
 
                 return [
                     'status'        => true,
                     'contratista'   => $visitasHistoric[0]['nombres_personal'],
+                    'eps'           => (int) $visitasHistoric[0]['id_sg_eps'],
+                    'arl'           => (int) $visitasHistoric[0]['id_sg_arl'],
+                    'actividad'     => (int) $visitasHistoric[0]['id_sg_tipo_de_actividad'],
+                    'torre'         => (int) $visitasHistoric[0]['id_sg_torre'],
+                    'aptooficina'   => (int) $visitasHistoric[0]['id_apto_oficina'],
+                    'empresa'       => (int) $visitasHistoric[0]['id_sg_mi_proveedor'],
                     'message'       => 'No tiene registros de entrada',
-                    'ultima_visita' => (empty($visitasHistoric[0]['fecha_entrada'])) ? '' : $visitasHistoric[0]['fecha_entrada']
+                    'ultima_visita' => (empty($visitasHistoric[0]['fecha_entrada'])) ? '' : $visitasHistoric[0]['fecha_entrada'],
+                    'expedicion'    => ModelGeneral::changeFormatDate($visitasHistoric[0]['expedicion_cedula']),
+                    'correo'        => $visitasHistoric[0]['correo_personal'],
+                    'status_io'     => false
                 ];
             }
         }
@@ -716,23 +827,26 @@ class ModelTerminal
                             "fecha_entrada"                 => Database::dateTime(),
                             "fecha_salida"                  => _ERROR_NO_REGISTRA_SALIDA,
                             "estado_salida"                 => 0,
-                            "estado"                        => ($this->formData['estado']) ? 1 : 2,
+                            "estado"                        => ($this->formData['estado']) ? 2 : 1,
                             "photo"                         => 'photo',
                             "fecha_registro"                => Database::dateTime(),
                             "creado_por"                    => $this->formData['uid']
                         ],                    
                         'autoinc'   => true                    
-                    ])->affectedRow();
-
-                    //Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                    ])->affectedRow();                    
     
                     if($registraVisitaResidencial)
+                    {
+                        Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Contratista registrado exitosamente'];
+                    }
                     else
                         return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el visitante'];
                 }
                 else
                 {
+                    $nombresContratista = ModelGeneral::removeWhiteSpaces($this->formData['nombres']);
+
                     $registraVisitante = Database::insert([
                         'table'     => "sg_personal_proveedor",
                         'values'    => [
@@ -740,10 +854,10 @@ class ModelTerminal
                             "id_sg_eps"             => $this->formData['eps'],
                             "id_sg_arl"             => $this->formData['arl'],
                             "cedula_proveedor"      => $this->formData['cedula'],
-                            "nombres_proveedor"     => $this->formData['nombres'],                    
+                            "nombres_proveedor"     => $nombresContratista,
                             "correo_proveedor"      => $this->formData['correo'],
                             "expedicion_cedula"     => $this->formData['expedicion'],
-                            "estado"                => ($this->formData['estado']) ? 1 : 2,
+                            "estado"                => ($this->formData['estado']) ? 2 : 1,
                             "fecha_creacion"        => Database::dateTime(),                    
                             "creado_por"            => $this->formData['uid']
                         ],
@@ -762,20 +876,21 @@ class ModelTerminal
                             "fecha_entrada"                 => Database::dateTime(),
                             "fecha_salida"                  => _ERROR_NO_REGISTRA_SALIDA,
                             "estado_salida"                 => 0,
-                            "estado"                        => ($this->formData['estado']) ? 1 : 2,
+                            "estado"                        => ($this->formData['estado']) ? 2 : 1,
                             "photo"                         => 'photo',
                             "fecha_registro"                => Database::dateTime(),
                             "creado_por"                    => $this->formData['uid']
                         ],                    
                         'autoinc'   => true                    
-                    ])->affectedRow();
-
-                    //Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                    ])->affectedRow();                    
 
                     if($registraVisitante && $registraVisitaResidencial)
+                    {
+                        Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Contratista registrado exitosamente'];
+                    }
                     else
-                        return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el visitante'];
+                        return ['status' => false, 'message' => 'Ha ocurrido un error al registrar el contratista'];
                 }
             }
 
@@ -790,18 +905,80 @@ class ModelTerminal
             return ['status' => false, 'message' => 'Photo is not defined'];
         else
         {
-            $updateRecord = Database::update([
-                'table'     => "sg_mi_personal",
-                'fields'    => [
-                    'photo_personal' => $this->modelGeneral->uploadImage($this->formData['photo'])
-                ],
-                'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
-            ])->updateRow();
+            if(empty(ModelGeneral::getIdPersonalByCedula($this->formData['cedula'])))
+                ;            
 
-            if($updateRecord)
-                return ['status' => true, 'message' => 'Photo Uploaded'];
-            else
-                return ['status' => false, 'message' => 'not uploaded'];
+            $existRecordMiPersonal = ModelGeneral::recordExist([
+                'fields'    => "*",
+                'table'     => "sg_registros_mi_personal",
+                'arguments' => "id_sg_personal = '". ModelGeneral::getIdPersonalByCedula($this->formData['cedula']) ."' AND creado_por = '". $this->formData['uid'] ."'"
+            ]);
+
+            if($existRecordMiPersonal)
+            {
+                $updateRecord = Database::update([
+                    'table'     => "sg_mi_personal",
+                    'fields'    => [
+                        'photo_personal' => $this->modelGeneral->uploadImage($this->formData['photo'])
+                    ],
+                    'arguments' => "cedula_personal = '". $this->formData['cedula'] ."'"
+                ])->updateRow();
+
+                if($updateRecord)
+                    return ['status' => true, 'message' => 'Photo Uploaded Personal'];
+                else
+                    return ['status' => false, 'message' => 'not uploaded Personal'];
+            }
+
+            if(empty(ModelGeneral::getIdVisitanteByCedula($this->formData['cedula'])))
+                ;
+
+            $existRecordMisVisitantes = ModelGeneral::recordExist([
+                'fields'    => "*",
+                'table'     => "sg_registros_mis_visitantes",
+                'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."' AND creado_por = '". $this->formData['uid'] ."'"
+            ]);
+
+            if($existRecordMisVisitantes)
+            {
+                $updateRecord = Database::update([
+                    'table'     => "sg_registros_mis_visitantes",
+                    'fields'    => [
+                        'photo' => $this->modelGeneral->uploadImage($this->formData['photo'])
+                    ],
+                    'arguments' => "id_sg_visitante = '". ModelGeneral::getIdVisitanteByCedula($this->formData['cedula']) ."'"
+                ])->updateRow();
+
+                if($updateRecord)
+                    return ['status' => true, 'message' => 'Photo Uploaded Visitante'];
+                else
+                    return ['status' => false, 'message' => 'not uploaded Visitante'];
+            }
+
+            if(empty(ModelGeneral::getIdContratistaByCedula($this->formData['cedula'])))
+                ;
+
+            $existRecordMisConstratistas = ModelGeneral::recordExist([
+                'fields'    => "*",
+                'table'     => "sg_registros_mis_proveedores",
+                'arguments' => "id_sg_personal_proveedor = '". ModelGeneral::getIdContratistaByCedula($this->formData['cedula']) ."' AND creado_por = '". $this->formData['uid'] ."'"
+            ]);
+
+            if($existRecordMisConstratistas)
+            {
+                $updateRecord = Database::update([
+                    'table'     => "sg_registros_mis_proveedores",
+                    'fields'    => [
+                        'photo' => $this->modelGeneral->uploadImage($this->formData['photo'])
+                    ],
+                    'arguments' => "id_sg_personal_proveedor = '". ModelGeneral::getIdContratistaByCedula($this->formData['cedula']) ."'"
+                ])->updateRow();
+
+                if($updateRecord)
+                    return ['status' => true, 'message' => 'Photo Uploaded Contratista'];
+                else
+                    return ['status' => false, 'message' => 'not uploaded Contratista'];
+            }
         }
     }
 }

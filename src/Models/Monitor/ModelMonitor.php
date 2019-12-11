@@ -3,7 +3,6 @@
 namespace Models\Monitor;
 
 use Database\Database;
-use Core\{Validate};
 use Models\General\ModelGeneral;
 
 class ModelMonitor
@@ -28,11 +27,21 @@ class ModelMonitor
 
     public function misVisitantes()
     {
+        $misvisitantes = Database::storeProcedure("CALL getMisVisitantesRegistros('". $this->formData['uid'] ."')")->records()->resultToArray();
 
+        if(!ModelGeneral::hasRows($misvisitantes))
+            return ['status' => false, 'message' => 'no hay registros'];
+
+        return ['status' => true, 'rows' => $misvisitantes ];
     }
 
     public function misContratistas()
     {
+        $miscontratistas = Database::storeProcedure("CALL getMisContratistasRegistros('". $this->formData['uid'] ."')")->records()->resultToArray();
 
+        if(!ModelGeneral::hasRows($miscontratistas))
+            return ['status' => false, 'message' => 'no hay registros'];
+
+        return ['status' => true, 'rows' => $miscontratistas ];
     }
 }
