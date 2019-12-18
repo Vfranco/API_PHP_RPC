@@ -38,14 +38,14 @@ class ModelUsuariosTerminal
                 if($hasUserTerminal)
                     return ['status' => false, 'message' => 'Ya se encuentra registrado este usuario'];
 
-                $hasFormularioCreado = ModelGeneral::recordExist([
+                /* $hasFormularioCreado = ModelGeneral::recordExist([
                     'fields'     => "*",
                     'table'      => "sg_terminales",
                     'arguments'  => "id_sg_tipo_registro = '". $this->formData['tipo'] ."' AND creado_por = '". $this->formData['uid'] ."'"
                 ]);
 
                 if($hasFormularioCreado)
-                    return ['status' => false, 'message' => 'Ya se encuentra registrado el tipo de registro'];
+                    return ['status' => false, 'message' => 'Ya se encuentra registrado el tipo de registro']; */
                     
                 $registraUsuarioTerminal = Database::insert([
                     'table'     => "sg_terminal_usuarios",
@@ -151,7 +151,7 @@ class ModelUsuariosTerminal
     {
         $resultSet = Database::query([
             'fields'    => "*",
-            'table'     => "sg_terminal_usuarios stu JOIN sg_terminales st ON stu.`id_sg_terminal_usuario` = st.`id_sg_terminal_usuario`",
+            'table'     => "sg_terminal_usuarios stu JOIN sg_terminales st ON stu.id_sg_terminal_usuario = st.id_sg_terminal_usuario",
             'arguments' => "stu.id_sg_terminal_usuario = '". $this->formData['id'] ."'"
         ])->records()->resultToArray();
 
@@ -199,6 +199,15 @@ class ModelUsuariosTerminal
                 return ['status' => false, 'message' => 'Los campos son obligatorios'];
             else
             {
+                $checkConfig = Database::query([
+                    'fields'    => "*",
+                    'table'     => "sg_terminales",
+                    'arguments' => "id_sg_terminal_usuario = '". $this->formData['id'] ."'"
+                ])->records()->resultToArray();
+        
+                if(ModelGeneral::hasRows($checkConfig))
+                    return ['status' => false, 'message' => 'Tiene configuracion establecida, no puede ser eliminado'];
+
                 $deleteTerminal = Database::delete([
                     'table'     => "sg_terminal_usuarios",
                     'arguments' => "id_sg_terminal_usuario = '". $this->formData['id'] ."'"
@@ -306,14 +315,14 @@ class ModelUsuariosTerminal
                 return ['status' => false, 'message' => 'Todos los campos son obligatorios'];
             else
             {
-                $hasFormularioCreado = ModelGeneral::recordExist([
+                /* $hasFormularioCreado = ModelGeneral::recordExist([
                     'fields'     => "*",
                     'table'      => "sg_terminales",
                     'arguments'  => "id_sg_tipo_registro = '". $this->formData['tipo'] ."' AND creado_por = '". $this->formData['uid'] ."'"
                 ]);
 
                 if($hasFormularioCreado)
-                    return ['status' => false, 'message' => 'Ya se encuentra registrado el tipo de registro'];
+                    return ['status' => false, 'message' => 'Ya se encuentra registrado el tipo de registro']; */
                 
                 $formulario = [
                     'c1'    => [

@@ -633,7 +633,8 @@ class ModelGeneral
     {
         $getEps = Database::query([
             'fields'    => "id_sg_tipo_de_actividad, nombre_actividad, id_sg_estado as estado",
-            'table'     => "sg_tipos_de_actividad"
+            'table'     => "sg_tipos_de_actividad",
+            'arguments' => "creado_por = '". $uid ."'"
         ])->records()->resultToArray();
 
         if (isset($getEps[0]['empty']) && $getEps[0]['empty'] == true)

@@ -310,6 +310,15 @@ class ModelProveedores
                 return ['status' => false, 'message' => 'Los campos son obligatorios'];
             else
             {
+                $getVisitsRecords = Database::query([
+                    'fields'    => "*",
+                    'table'     => "sg_registros_mis_proveedores",
+                    'arguments' => "id_sg_personal_proveedor = '". $this->formData['id'] ."'"
+                ])->records()->resultToArray();
+
+                if(ModelGeneral::hasRows($getVisitsRecords))
+                    return ['status' => false, 'message' => 'Este Contratista contiene registros de E/S en el sistema'];
+
                 $deleteContratista = Database::delete([
                     'table'     => "sg_personal_proveedor",                    
                     'arguments' => "id_sg_personal_proveedor = '". $this->formData['id'] ."'"
