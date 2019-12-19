@@ -31,7 +31,18 @@ class ModelActividades
                 ]);
 
                 if($actividadExist)
-                    return ['status' => false, 'message' => "La Actividad se encuentra registrada"];
+                {
+                    $enableActividad = Database::update([
+                        'table'     => "sg_tipos_de_actividad",
+                        'fields'    => [                        
+                            "id_sg_estado"  => 1
+                        ],
+                        'arguments' => "nombre_actividad = '". $this->formData['nombreActividad'] ."'"
+                    ])->updateRow();
+
+                    if($enableActividad)
+                        return ['status' => true, 'message' => "Actividad registrada"];
+                }
 
                 $saveActivity = Database::insert([
                     'table'     => 'sg_tipos_de_actividad',
