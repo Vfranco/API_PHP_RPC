@@ -5,6 +5,7 @@ namespace Controllers;
 use AppLib\Http\{ Request, Response };
 use Core\ActionFilters;
 use Models\Configuracion\ModelConfiguracion;
+use Models\Actividades\ModelActividades;
 
 class Configuracion
 {
@@ -142,5 +143,37 @@ class Configuracion
 
         $obj = new ModelConfiguracion(Request::phpInput());
         Response::status(200)->json($obj->UpdatePersonalControl());
+    }
+
+    static function CreateActividad()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelActividades(Request::phpInput());
+        Response::status(200)->json($obj->CreateActividad());
+    }
+
+    static function ReadActividades()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelActividades(Request::phpInput());
+        Response::status(200)->json($obj->ReadActividades());
+    }
+
+    static function UpdateActividad()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelActividades(Request::phpInput());
+        Response::status(200)->json($obj->UpdateActividad());
+    }
+
+    static function DeleteActividad()
+    {
+        ActionFilters::Get();
+
+        $obj = new ModelActividades(Request::phpInput());
+        Response::status(200)->json($obj->DeleteActividad());
     }
 }

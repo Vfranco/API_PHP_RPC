@@ -284,7 +284,7 @@ class ModelTerminal
 
                 if($salida)
                 {
-                    Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                    Request::getRequest(NODE_SERVER . '/monitor/personal/' . $this->formData['uid']);
 
                     return [
                         'status'        => true,
@@ -298,7 +298,7 @@ class ModelTerminal
             }
             else
             {
-                Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                Request::getRequest(NODE_SERVER . '/monitor/personal/' . $this->formData['uid']);
 
                 return [
                     'status'        => true,
@@ -339,7 +339,7 @@ class ModelTerminal
 
                 if($saveActividadIngreso)
                 {
-                    Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['idEmpresa']);
+                    Request::getRequest(NODE_SERVER . '/monitor/personal/' . $this->formData['idEmpresa']);
                     return ['status' => true, 'message' => 'Bienvenido, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']) . ' a la sede ' . ModelGeneral::getNombreSedeById($this->formData['sede']), 'entrada' => Database::dateTime()];
                 }
                 else
@@ -435,7 +435,7 @@ class ModelTerminal
     
                         if($saveActividadIngreso)
                         {
-                            Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                            Request::getRequest(NODE_SERVER . '/monitor/personal/' . $this->formData['uid']);
                             return ['status' => true, 'message' => 'Bienvenido, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']) . ' a la sede ' . ModelGeneral::getNombreSedeById($this->formData['sede']), 'entrada' => Database::dateTime()];
                         }
                         else
@@ -454,7 +454,7 @@ class ModelTerminal
 
                         if($updateSalida)
                         {
-                            Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                            Request::getRequest(NODE_SERVER . '/monitor/personal/' . $this->formData['uid']);
                             return ['status' => true, 'message' => 'Gracias por tu visita, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']), 'salida' => Database::dateTime()];
                         }
                         else
@@ -481,7 +481,7 @@ class ModelTerminal
 
                     if($saveActividadIngreso)
                     {
-                        Request::getRequest(NODE_SERVER . '/monitor/personal?uid=' . $this->formData['uid']);
+                        Request::getRequest(NODE_SERVER . '/monitor/personal/' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Bienvenido, ' . ModelGeneral::getNombresEmpleadoByCedula($this->formData['cedula']) . ' a la sede ' . ModelGeneral::getNombreSedeById($this->formData['sede']), 'entrada' => Database::dateTime()];
                     }
                     else
@@ -530,7 +530,7 @@ class ModelTerminal
 
                 if($salida)
                 {
-                    Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                    Request::getRequest(NODE_SERVER . '/monitor/visitantes/' . $this->formData['uid']);
 
                     return [
                         'status'        => true,
@@ -542,7 +542,7 @@ class ModelTerminal
             }
             else
             {
-                Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                Request::getRequest(NODE_SERVER . '/monitor/visitantes/' . $this->formData['uid']);
 
                 return [
                     'status'        => true,
@@ -604,7 +604,7 @@ class ModelTerminal
     
                     if($registraVisitaResidencial)
                     {
-                        Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                        Request::getRequest(NODE_SERVER . '/monitor/visitantes/' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Visitante registrado exitosamente'];
                     }
                     else
@@ -658,7 +658,7 @@ class ModelTerminal
 
                     if($registraVisitante && $registraVisitaResidencial)
                     {
-                        Request::getRequest(NODE_SERVER . '/monitor/visitantes?uid=' . $this->formData['uid']);
+                        Request::getRequest(NODE_SERVER . '/monitor/visitantes/' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Visitante registrado exitosamente here'];
                     }
                     else
@@ -747,7 +747,7 @@ class ModelTerminal
 
                 if($salida)
                 {
-                    Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
+                    Request::getRequest(NODE_SERVER . '/monitor/contratistas/' . $this->formData['uid']);
 
                     return [
                         'status'        => true,
@@ -770,7 +770,7 @@ class ModelTerminal
             }
             else
             {
-                Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
+                Request::getRequest(NODE_SERVER . '/monitor/contratistas/' . $this->formData['uid']);
 
                 return [
                     'status'        => true,
@@ -837,7 +837,7 @@ class ModelTerminal
     
                     if($registraVisitaResidencial)
                     {
-                        Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
+                        Request::getRequest(NODE_SERVER . '/monitor/contratistas/' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Contratista registrado exitosamente'];
                     }
                     else
@@ -886,7 +886,7 @@ class ModelTerminal
 
                     if($registraVisitante && $registraVisitaResidencial)
                     {
-                        Request::getRequest(NODE_SERVER . '/monitor/contratistas?uid=' . $this->formData['uid']);
+                        Request::getRequest(NODE_SERVER . '/monitor/contratistas/' . $this->formData['uid']);
                         return ['status' => true, 'message' => 'Contratista registrado exitosamente'];
                     }
                     else
